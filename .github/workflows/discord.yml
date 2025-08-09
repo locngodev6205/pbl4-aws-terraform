@@ -1,4 +1,4 @@
-name: GitHub to Discord - Pro
+name: GitHub to Discord - ProJS
 
 on:
   push:
@@ -9,138 +9,80 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
-      - name: Install jq
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y jq
-
-      - name: Build rich embed and send to Discord
+      - name: Send rich Discord embed
+        uses: actions/github-script@v7
         env:
           WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-          EVENT_NAME: ${{ github.event_name }}
-          REPO: ${{ github.repository }}
-          ACTOR: ${{ github.actor }}
-          REF_NAME: ${{ github.ref_name }}
-          SENDER_AVATAR: ${{ github.event.sender.avatar_url }}
-          # push
-          COMPARE_URL: ${{ github.event.compare }}
-          COMMITS_JSON: ${{ toJson(github.event.commits) }}
-          # pr
-          PR_JSON: ${{ toJson(github.event.pull_request) }}
-          # issue
-          ISSUE_JSON: ${{ toJson(github.event.issue) }}
-          ACTION: ${{ github.event.action }}
-        run: |
-          set -euo pipefail
-          ISO_NOW="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+        with:
+          script: |
+            const webhook = process.env.WEBHOOK;
+            if (!webhook) {
+              core.setFailed('Missing DISCORD_WEBHOOK secret');
+              return;
+            }
 
-          if [ "$EVENT_NAME" = "push" ]; then
-            # Up to 5 commits: short sha, author, message (1 line), +added -removed ~modified
-            FIELDS=$(printf '%s' "$COMMITS_JSON" | jq -c '
-              (.[0:5] // []) | map({
-                name: ("`" + (.id[0:7]) + "` — " + (.author.username // .author.name // "unknown")),
-                value: ((.message // "") | gsub("\r\n|\n"; " "))
-                       + "\n+" + (((.added // [])|length)|tostring)
-                       + " -" + (((.removed // [])|length)|tostring)
-                       + " ~" + (((.modified // [])|length)|tostring),
-                inline: false
-              })
-            ')
-            [ -z "$FIELDS" ] && FIELDS="[]"
+            const ev = context.eventName;
+            const repo = `${context.repo.owner}/${context.repo.repo}`;
+            const actor = context.actor;
+            const avatar = context.payload?.sender?.avatar_url ?? undefined;
+            const ts = new Date().toISOString();
 
-            TITLE="Push to \`$REF_NAME\` — $REPO"
-            DESC="**Pusher:** $ACTOR\n**Compare:** $COMPARE_URL"
-            COLOR=5814783
+            let embed = {
+              color: 5814783,
+              author: { name: actor, icon_url: avatar },
+              footer: { text: repo },
+              timestamp: ts
+            };
 
-            PAYLOAD=$(jq -n \
-              --arg title "$TITLE" \
-              --arg desc "$DESC" \
-              --arg url "$COMPARE_URL" \
-              --arg actor "$ACTOR" \
-              --arg avatar "$SENDER_AVATAR" \
-              --arg repo "$REPO" \
-              --arg ts "$ISO_NOW" \
-              --argjson fields "$FIELDS" \
-              --argjson color "$COLOR" \
-              '{embeds:[{title:$title,description:$desc,url:$url,color:$color,
-                         author:{name:$actor,icon_url:$avatar},
-                         fields:$fields,footer:{text:$repo},timestamp:$ts}]}')
+            if (ev === 'push') {
+              const ref = context.ref.replace('refs/heads/', '');
+              const compare = context.payload.compare;
+              const commits = (context.payload.commits || []).slice(0, 5);
+              const lines = commits.length
+                ? commits.map(c =>
+                    `- [\`${c.id.slice(0,7)}\`](${c.url}) by **${(c.author?.username || c.author?.name || 'unknown')}**: ${String(c.message||'').split('\n')[0]} (+${(c.added||[]).length} -${(c.removed||[]).length} ~${(c.modified||[]).length})`
+                  ).join('\n')
+                : '(no commit details)';
 
-          elif [ "$EVENT_NAME" = "pull_request" ]; then
-            TITLE=$(printf '%s' "$PR_JSON" | jq -r '"PR #\(.number) \(.state|ascii_upcase) — \(.title)"')
-            FROM=$(printf '%s' "$PR_JSON" | jq -r '.head.ref')
-            TO=$(printf '%s' "$PR_JSON" | jq -r '.base.ref')
-            LINK=$(printf '%s' "$PR_JSON" | jq -r '.html_url')
-            USER=$(printf '%s' "$PR_JSON" | jq -r '.user.login')
-            AVATAR=$(printf '%s' "$PR_JSON" | jq -r '.user.avatar_url')
-            ADD=$(printf '%s' "$PR_JSON" | jq -r '.additions // 0')
-            DEL=$(printf '%s' "$PR_JSON" | jq -r '.deletions // 0')
-            CHG=$(printf '%s' "$PR_JSON" | jq -r '.changed_files // 0')
-            UPDATED=$(printf '%s' "$PR_JSON" | jq -r '.updated_at // empty')
+              embed.title = `🚀 Push to \`${ref}\` — ${repo}`;
+              embed.description = `**Pusher:** ${actor}\n**Compare:** ${compare}\n\n${lines}`;
+              embed.url = compare;
+              embed.color = 5814783;
 
-            DESC="**Action:** $ACTION by **$ACTOR** (author: **$USER**)
-**Branch:** \`$FROM\` → \`$TO\`
-**Diff:** +$ADD -$DEL ($CHG files)
-**Link:** $LINK"
-            COLOR=3447003
+            } else if (ev === 'pull_request') {
+              const pr = context.payload.pull_request;
+              const from = pr.head.ref;
+              const to = pr.base.ref;
+              const add = pr.additions ?? 0;
+              const del = pr.deletions ?? 0;
+              const chg = pr.changed_files ?? 0;
 
-            PAYLOAD=$(jq -n \
-              --arg title "$TITLE" \
-              --arg desc "$DESC" \
-              --arg url "$LINK" \
-              --arg actor "$ACTOR" \
-              --arg avatar "$AVATAR" \
-              --arg repo "$REPO" \
-              --arg ts "${UPDATED:-$ISO_NOW}" \
-              --argjson color "$COLOR" \
-              '{embeds:[{title:$title,description:$desc,url:$url,color:$color,
-                         author:{name:$actor,icon_url:$avatar},
-                         footer:{text:$repo},timestamp:$ts}]}')
+              embed.title = `🔀 PR #${pr.number} ${String(pr.state).toUpperCase()} — ${pr.title}`;
+              embed.description = `**Action:** ${context.payload.action} by **${actor}** (author: **${pr.user.login}**)\n**Branch:** \`${from}\` → \`${to}\`\n**Diff:** +${add} -${del} (${chg} files)\n**Link:** ${pr.html_url}`;
+              embed.url = pr.html_url;
+              embed.color = 3447003;
 
-          elif [ "$EVENT_NAME" = "issues" ]; then
-            TITLE=$(printf '%s' "$ISSUE_JSON" | jq -r '"Issue #\(.number) \(.state|ascii_upcase) — \(.title)"')
-            LINK=$(printf '%s' "$ISSUE_JSON" | jq -r '.html_url')
-            USER=$(printf '%s' "$ISSUE_JSON" | jq -r '.user.login')
-            AVATAR=$(printf '%s' "$ISSUE_JSON" | jq -r '.user.avatar_url')
-            UPDATED=$(printf '%s' "$ISSUE_JSON" | jq -r '.updated_at // empty')
+            } else if (ev === 'issues') {
+              const is = context.payload.issue;
 
-            DESC="**Action:** $ACTION by **$ACTOR** (author: **$USER**)
-**Link:** $LINK"
-            COLOR=15105570
+              embed.title = `📌 Issue #${is.number} ${String(is.state).toUpperCase()} — ${is.title}`;
+              embed.description = `**Action:** ${context.payload.action} by **${actor}** (author: **${is.user.login}**)\n**Link:** ${is.html_url}`;
+              embed.url = is.html_url;
+              embed.color = 15105570;
 
-            PAYLOAD=$(jq -n \
-              --arg title "$TITLE" \
-              --arg desc "$DESC" \
-              --arg url "$LINK" \
-              --arg actor "$ACTOR" \
-              --arg avatar "$AVATAR" \
-              --arg repo "$REPO" \
-              --arg ts "${UPDATED:-$ISO_NOW}" \
-              --argjson color "$COLOR" \
-              '{embeds:[{title:$title,description:$desc,url:$url,color:$color,
-                         author:{name:$actor,icon_url:$avatar},
-                         footer:{text:$repo},timestamp:$ts}]}')
+            } else {
+              embed.title = `ℹ️ ${ev} — ${repo}`;
+              embed.description = `Actor: **${actor}**`;
+              embed.color = 9807270;
+            }
 
-          else
-            TITLE="$EVENT_NAME — $REPO"
-            DESC="Actor: **$ACTOR**"
-            COLOR=9807270
-            PAYLOAD=$(jq -n \
-              --arg title "$TITLE" \
-              --arg desc "$DESC" \
-              --arg actor "$ACTOR" \
-              --arg avatar "$SENDER_AVATAR" \
-              --arg repo "$REPO" \
-              --arg ts "$ISO_NOW" \
-              --argjson color "$COLOR" \
-              '{embeds:[{title:$title,description:$desc,color:$color,
-                         author:{name:$actor,icon_url:$avatar},
-                         footer:{text:$repo},timestamp:$ts}]}')
-          fi
+            const payload = { embeds: [embed] };
+            const res = await fetch(webhook, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
 
-          # Send to Discord
-          curl -s -o /dev/null -w "%{http_code}\n" \
-               -H "Content-Type: application/json" \
-               -X POST \
-               -d "$PAYLOAD" \
-               "$WEBHOOK"
+            if (!res.ok) {
+              core.setFailed(`Discord webhook failed: ${res.status} ${res.statusText}`);
+            }
