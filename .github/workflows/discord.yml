@@ -1,4 +1,4 @@
-name: GitHub to Discord
+name: GitHub → Discord
 
 on:
   push:
@@ -9,9 +9,27 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
-      - name: Send Discord Notification
+      - name: Build message and send to Discord
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
+          EVENT="${{ github.event_name }}"
+
+          if [ "$EVENT" = "push" ]; then
+            MSG="🚀 **Push** to \`${{ github.ref_name }}\` in **${{ github.repository }}** by **${{ github.actor }}**\n• Message: ${{ github.event.head_commit.message }}\n• Compare: ${{ github.event.compare }}"
+          elif [ "$EVENT" = "pull_request" ]; then
+            MSG="🔀 **PR ${{ github.event.action }}** #${{ github.event.number }} by **${{ github.actor }}** in **${{ github.repository }}**\n• Title: ${{ github.event.pull_request.title }}\n• From \`${{ github.event.pull_request.head.ref }}\` → \`${{ github.event.pull_request.base.ref }}\`\n• Link: ${{ github.event.pull_request.html_url }}"
+          elif [ "$EVENT" = "issues" ]; then
+            MSG="📌 **Issue ${{ github.event.action }}** #${{ github.event.issue.number }} by **${{ github.actor }}** in **${{ github.repository }}**\n• Title: ${{ github.event.issue.title }}\n• Link: ${{ github.event.issue.html_url }}"
+          else
+            MSG="ℹ️ Event: $EVENT in **${{ github.repository }}** by **${{ github.actor }}**"
+          fi
+
+          # Escape JSON safely (quotes + newlines)
+          MSG_JSON="${MSG//\"/\\\"}"
+          MSG_JSON="${MSG_JSON//$'\n'/\\n}"
+
           curl -H "Content-Type: application/json" \
-          -X POST \
-          -d "{\"content\": \"📢 Có cập nhật mới trong repo **$GITHUB_REPOSITORY** — Commit: [$GITHUB_SHA](https://github.com/$GITHUB_REPOSITORY/commit/$GITHUB_SHA)\"}" \
-          ${{ secrets.DISCORD_WEBHOOK }}
+               -X POST \
+               -d "{ \"content\": \"${MSG_JSON}\" }" \
+               "$WEBHOOK"
