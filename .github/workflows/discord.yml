@@ -1,0 +1,17 @@
+name: GitHub to Discord
+
+on:
+  push:
+  pull_request:
+  issues:
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Discord Notification
+        run: |
+          curl -H "Content-Type: application/json" \
+          -X POST \
+          -d "{\"content\": \"📢 Có cập nhật mới trong repo **$GITHUB_REPOSITORY** — Commit: [$GITHUB_SHA](https://github.com/$GITHUB_REPOSITORY/commit/$GITHUB_SHA)\"}" \
+          ${{ secrets.DISCORD_WEBHOOK }}
