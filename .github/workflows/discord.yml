@@ -1,4 +1,4 @@
-name: GitHub → Discord (Rich)
+name: GitHub → Discord (Pro)
 
 on:
   push:
@@ -14,37 +14,69 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install -y jq
 
-      - name: Build message and send to Discord
+      - name: Build rich embed and send to Discord
         env:
           WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          # Common
           EVENT: ${{ github.event_name }}
           REPO: ${{ github.repository }}
           ACTOR: ${{ github.actor }}
+          SENDER_AVATAR: ${{ github.event.sender.avatar_url }}
           REF_NAME: ${{ github.ref_name }}
+          TS: ${{ github.event.head_commit.timestamp }}
+          NOW_UTC: ${{ github.event.repository.pushed_at }}
+          # Push
           COMPARE_URL: ${{ github.event.compare }}
           COMMITS_JSON: ${{ toJson(github.event.commits) }}
+          # PR
           PR_JSON: ${{ toJson(github.event.pull_request) }}
+          # Issue
           ISSUE_JSON: ${{ toJson(github.event.issue) }}
           ACTION: ${{ github.event.action }}
           NUMBER: ${{ github.event.number }}
         run: |
+          ISO_NOW=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
           if [ "$EVENT" = "push" ]; then
-            # Lấy tối đa 5 commit, gom thành các dòng có: id rút gọn, tác giả, message, +added -removed ~modified
-            LINES=$(echo "$COMMITS_JSON" | jq -r '
-              (.[0:5] // [])[]
-              | "- [`\(.id[0:7])`](\(.url)) by **\(.author.username // .author.name // "unknown")**: \((.message // "") | gsub("\n"; " ")) (+\((.added // [])|length) -\((.removed // [])|length) ~\((.modified // [])|length))"
+            # Build fields for up to 5 commits
+            FIELDS=$(echo "$COMMITS_JSON" | jq '
+              (.[0:5] // []) | map({
+                name: ("`" + (.id[0:7]) + "` — " + (.author.username // .author.name // "unknown")),
+                value: ((.message // "") | gsub("\n"; " "))
+                        + "\n+" + (((.added // [])|length)|tostring)
+                        + " -" + (((.removed // [])|length)|tostring)
+                        + " ~" + (((.modified // [])|length)|tostring),
+                inline: false
+              })
             ')
 
-            # Nếu không có commit (trường hợp hiếm), để dòng fallback
-            if [ -z "$LINES" ]; then
-              LINES="(no commit details available)"
-            fi
-
             TITLE="🚀 Push to \`$REF_NAME\` — $REPO"
-            DESC="**Pusher:** $ACTOR\n**Compare:** $COMPARE_URL\n\n$LINES"
+            DESC="**Pusher:** $ACTOR\n**Compare:** $COMPARE_URL"
+            COLOR=5814783 # blue-ish
 
-            PAYLOAD=$(jq -n --arg t "$TITLE" --arg d "$DESC" --arg url "$COMPARE_URL" \
-              '{embeds:[{title:$t, description:$d, url:$url, color:5814783}]}')
+            PAYLOAD=$(jq -n \
+              --arg title "$TITLE" \
+              --arg desc "$DESC" \
+              --arg url "$COMPARE_URL" \
+              --arg actor "$ACTOR" \
+              --arg avatar "$SENDER_AVATAR" \
+              --arg repo "$REPO" \
+              --arg ts "$ISO_NOW" \
+              --argjson fields "$FIELDS" \
+              --argjson color "$COLOR" '
+              {
+                embeds: [{
+                  title: $title,
+                  description: $desc,
+                  url: $url,
+                  color: $color,
+                  author: { name: $actor, icon_url: $avatar },
+                  fields: $fields,
+                  footer: { text: $repo },
+                  timestamp: $ts
+                }]
+              }'
+            )
 
           elif [ "$EVENT" = "pull_request" ]; then
             TITLE=$(echo "$PR_JSON" | jq -r '"🔀 PR #\(.number) \(.state | ascii_upcase) — \(.title)"')
@@ -52,29 +84,95 @@ jobs:
             TO=$(echo "$PR_JSON" | jq -r '.base.ref')
             LINK=$(echo "$PR_JSON" | jq -r '.html_url')
             USER=$(echo "$PR_JSON" | jq -r '.user.login')
+            AVATAR=$(echo "$PR_JSON" | jq -r '.user.avatar_url')
             ADD=$(echo "$PR_JSON" | jq -r '.additions // 0')
             DEL=$(echo "$PR_JSON" | jq -r '.deletions // 0')
             CHG=$(echo "$PR_JSON" | jq -r '.changed_files // 0')
+            UPDATED=$(echo "$PR_JSON" | jq -r '.updated_at // empty')
+            DESC="**Action:** $ACTION by **$ACTOR** (author: **$USER**)
+**Branch:** \`$FROM\` → \`$TO\`
+**Diff:** +$ADD -$DEL ($CHG files)
+**Link:** $LINK"
+            COLOR=3447003 # green
 
-            DESC="**Action:** $ACTION by **$ACTOR** (author: **$USER**)\n**Branch:** \`$FROM\` → \`$TO\`\n**Diff:** +$ADD -$DEL ($CHG files)\n**Link:** $LINK"
-
-            PAYLOAD=$(jq -n --arg t "$TITLE" --arg d "$DESC" --arg url "$LINK" \
-              '{embeds:[{title:$t, description:$d, url:$url, color:3447003}]}')
+            PAYLOAD=$(jq -n \
+              --arg title "$TITLE" \
+              --arg desc "$DESC" \
+              --arg url "$LINK" \
+              --arg actor "$ACTOR" \
+              --arg avatar "$AVATAR" \
+              --arg repo "$REPO" \
+              --arg ts "${UPDATED:-$ISO_NOW}" \
+              --argjson color "$COLOR" '
+              {
+                embeds: [{
+                  title: $title,
+                  description: $desc,
+                  url: $url,
+                  color: $color,
+                  author: { name: $actor, icon_url: $avatar },
+                  footer: { text: $repo },
+                  timestamp: $ts
+                }]
+              }'
+            )
 
           elif [ "$EVENT" = "issues" ]; then
             TITLE=$(echo "$ISSUE_JSON" | jq -r '"📌 Issue #\(.number) \(.state | ascii_upcase) — \(.title)"')
             LINK=$(echo "$ISSUE_JSON" | jq -r '.html_url')
             USER=$(echo "$ISSUE_JSON" | jq -r '.user.login')
-            DESC="**Action:** $ACTION by **$ACTOR** (author: **$USER**)\n**Link:** $LINK"
+            AVATAR=$(echo "$ISSUE_JSON" | jq -r '.user.avatar_url')
+            UPDATED=$(echo "$ISSUE_JSON" | jq -r '.updated_at // empty')
+            DESC="**Action:** $ACTION by **$ACTOR** (author: **$USER**)
+**Link:** $LINK"
+            COLOR=15105570 # orange
 
-            PAYLOAD=$(jq -n --arg t "$TITLE" --arg d "$DESC" --arg url "$LINK" \
-              '{embeds:[{title:$t, description:$d, url:$url, color:15105570}]}')
+            PAYLOAD=$(jq -n \
+              --arg title "$TITLE" \
+              --arg desc "$DESC" \
+              --arg url "$LINK" \
+              --arg actor "$ACTOR" \
+              --arg avatar "$AVATAR" \
+              --arg repo "$REPO" \
+              --arg ts "${UPDATED:-$ISO_NOW}" \
+              --argjson color "$COLOR" '
+              {
+                embeds: [{
+                  title: $title,
+                  description: $desc,
+                  url: $url,
+                  color: $color,
+                  author: { name: $actor, icon_url: $avatar },
+                  footer: { text: $repo },
+                  timestamp: $ts
+                }]
+              }'
+            )
 
           else
             TITLE="ℹ️ $EVENT — $REPO"
             DESC="Actor: **$ACTOR**"
-            PAYLOAD=$(jq -n --arg t "$TITLE" --arg d "$DESC" \
-              '{embeds:[{title:$t, description:$d, color:9807270}]}')
+            COLOR=9807270
+
+            PAYLOAD=$(jq -n \
+              --arg title "$TITLE" \
+              --arg desc "$DESC" \
+              --arg actor "$ACTOR" \
+              --arg avatar "$SENDER_AVATAR" \
+              --arg repo "$REPO" \
+              --arg ts "$ISO_NOW" \
+              --argjson color "$COLOR" '
+              {
+                embeds: [{
+                  title: $title,
+                  description: $desc,
+                  color: $color,
+                  author: { name: $actor, icon_url: $avatar },
+                  footer: { text: $repo },
+                  timestamp: $ts
+                }]
+              }'
+            )
           fi
 
           curl -H "Content-Type: application/json" \
