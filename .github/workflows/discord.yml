@@ -1,15 +1,18 @@
-name: GitHub to Discord - Pro Diff
+name: GitHub to Discord - Pro
 
 on:
   push:
   pull_request:
   issues:
 
+permissions:
+  contents: read
+
 jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
-      - name: Send rich Discord embed with accurate file counts
+      - name: Send rich Discord embed
         uses: actions/github-script@v7
         env:
           WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
@@ -21,14 +24,29 @@ jobs:
               return;
             }
 
-            const ev = context.eventName;
+            // helpers
             const repoFull = `${context.repo.owner}/${context.repo.repo}`;
             const actor = context.actor;
             const avatar = context.payload?.sender?.avatar_url;
-            const ts = new Date().toISOString();
+            const nowISO = new Date().toISOString();
 
-            // Helper: POST to Discord
-            async function send(embed) {
+            const COLORS = {
+              push: 5814783,              // blue
+              prOpen: 3447003,            // green
+              prMerged: 10181046,         // purple
+              prClosed: 15158332,         // red
+              issue: 15105570,            // orange
+              info: 9807270               // grey
+            };
+
+            const baseEmbed = (color) => ({
+              color,
+              author: { name: actor, icon_url: avatar },
+              footer: { text: repoFull },
+              timestamp: nowISO
+            });
+
+            const send = async (embed) => {
               const res = await fetch(webhook, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -38,48 +56,42 @@ jobs:
                 const text = await res.text();
                 core.setFailed(`Discord webhook failed: ${res.status} ${res.statusText} — ${text}`);
               }
-            }
-
-            // Base embed
-            const base = {
-              color: 5814783,
-              author: { name: actor, icon_url: avatar },
-              footer: { text: repoFull },
-              timestamp: ts
             };
 
-            if (ev === 'push') {
+            const trim = (s, n) => (s || '').length > n ? s.slice(0, n - 1) + '…' : (s || '');
+
+            // ===== PUSH =====
+            if (context.eventName === 'push') {
               const ref = context.ref.replace('refs/heads/', '');
               const before = context.payload.before;
-              const after = context.payload.after;
+              const after  = context.payload.after;
 
-              // Lấy diff chuẩn từ GitHub API (đếm file + dòng chính xác)
+              // Compare to get accurate file & line counts
               const cmp = await github.rest.repos.compareCommits({
                 owner: context.repo.owner,
-                repo: context.repo.repo,
-                base: before,
-                head: after
+                repo:  context.repo.repo,
+                base:  before,
+                head:  after
               });
 
-              // Đếm file theo status
               let addedFiles = 0, removedFiles = 0, modifiedFiles = 0;
+              let linesAdded = 0, linesDeleted = 0;
+
               for (const f of (cmp.data.files || [])) {
-                if (f.status === 'added') addedFiles++;
-                else if (f.status === 'removed') removedFiles++;
-                else modifiedFiles++; // modified / renamed / changed
+                const st = f.status; // added | removed | modified | renamed | changed
+                if (st === 'added') addedFiles++;
+                else if (st === 'removed') removedFiles++;
+                else modifiedFiles++; // count modified/renamed as modified
+                linesAdded  += f.additions  || 0;
+                linesDeleted += f.deletions  || 0;
               }
 
-              // Tổng dòng
-              const linesAdded = cmp.data.additions ?? 0;
-              const linesDeleted = cmp.data.deletions ?? 0;
-
-              // Liệt kê tối đa 5 commit gần nhất trong compare
               const commits = (cmp.data.commits || []).slice(-5);
-              const lines = commits.length
+              const commitLines = commits.length
                 ? commits.map(c => {
                     const sha = c.sha.slice(0,7);
                     const who = c.author?.login || c.commit?.author?.name || 'unknown';
-                    const msg = String(c.commit?.message || '').split('\n')[0];
+                    const msg = trim(String(c.commit?.message || '').split('\n')[0], 140);
                     return `- [\`${sha}\`](${c.html_url}) by **${who}**: ${msg}`;
                   }).join('\n')
                 : '(no commit details)';
@@ -87,61 +99,73 @@ jobs:
               const compareUrl = cmp.data.html_url;
 
               const embed = {
-                ...base,
-                color: 5814783,
+                ...baseEmbed(COLORS.push),
                 title: `🚀 Push to \`${ref}\` — ${repoFull}`,
                 url: compareUrl,
-                description:
-                  `**Pusher:** ${actor}\n` +
-                  `**Compare:** ${compareUrl}\n\n` +
-                  `**Files changed:** ${addedFiles} added, ${removedFiles} removed, ${modifiedFiles} modified\n` +
-                  `**Lines:** +${linesAdded} / -${linesDeleted}\n\n` +
-                  lines
+                description: [
+                  `**Pusher:** ${actor}`,
+                  `**Compare:** ${compareUrl}`,
+                  ``,
+                  `**Files changed:** ${addedFiles} added, ${removedFiles} removed, ${modifiedFiles} modified`,
+                  `**Lines:** +${linesAdded} / -${linesDeleted}`,
+                  ``,
+                  commitLines
+                ].join('\n')
               };
 
               await send(embed);
+              return;
+            }
 
-            } else if (ev === 'pull_request') {
+            // ===== PULL REQUEST =====
+            if (context.eventName === 'pull_request') {
               const pr = context.payload.pull_request;
               const from = pr.head.ref;
               const to = pr.base.ref;
 
+              let color = COLORS.prOpen;
+              if (pr.merged) color = COLORS.prMerged;
+              else if (pr.state === 'closed') color = COLORS.prClosed;
+
               const embed = {
-                ...base,
-                color: 3447003,
-                title: `🔀 PR #${pr.number} ${String(pr.state).toUpperCase()} — ${pr.title}`,
+                ...baseEmbed(color),
+                title: `🔀 PR #${pr.number} ${String(pr.merged ? 'MERGED' : pr.state).toUpperCase()} — ${trim(pr.title, 200)}`,
                 url: pr.html_url,
-                description:
-                  `**Action:** ${context.payload.action} by **${actor}** (author: **${pr.user.login}**)\n` +
-                  `**Branch:** \`${from}\` → \`${to}\`\n` +
-                  `**Files changed:** ${pr.changed_files} files\n` +
-                  `**Lines:** +${pr.additions} / -${pr.deletions}\n` +
+                description: [
+                  `**Action:** ${context.payload.action} by **${actor}** (author: **${pr.user.login}**)`,
+                  `**Branch:** \`${from}\` → \`${to}\``,
+                  `**Files changed:** ${pr.changed_files} files`,
+                  `**Lines:** +${pr.additions} / -${pr.deletions}`,
                   `**Link:** ${pr.html_url}`
+                ].join('\n')
               };
 
               await send(embed);
+              return;
+            }
 
-            } else if (ev === 'issues') {
+            // ===== ISSUES =====
+            if (context.eventName === 'issues') {
               const is = context.payload.issue;
 
               const embed = {
-                ...base,
-                color: 15105570,
-                title: `📌 Issue #${is.number} ${String(is.state).toUpperCase()} — ${is.title}`,
+                ...baseEmbed(COLORS.issue),
+                title: `📌 Issue #${is.number} ${String(is.state).toUpperCase()} — ${trim(is.title, 200)}`,
                 url: is.html_url,
-                description:
-                  `**Action:** ${context.payload.action} by **${actor}** (author: **${is.user.login}**)\n` +
+                description: [
+                  `**Action:** ${context.payload.action} by **${actor}** (author: **${is.user.login}**)`,
                   `**Link:** ${is.html_url}`
+                ].join('\n')
               };
 
               await send(embed);
-
-            } else {
-              const embed = {
-                ...base,
-                color: 9807270,
-                title: `ℹ️ ${ev} — ${repoFull}`,
-                description: `Actor: **${actor}**`
-              };
-              await send(embed);
+              return;
             }
+
+            // ===== OTHER EVENTS (fallback) =====
+            const embed = {
+              ...baseEmbed(COLORS.info),
+              title: `ℹ️ ${context.eventName} — ${repoFull}`,
+              description: `Actor: **${actor}**`
+            };
+            await send(embed);
