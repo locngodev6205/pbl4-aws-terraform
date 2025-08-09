@@ -1,4 +1,4 @@
-name: GitHub → Discord
+name: GitHub → Discord (Rich)
 
 on:
   push:
@@ -9,27 +9,75 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
+      - name: Install jq
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y jq
+
       - name: Build message and send to Discord
         env:
           WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          EVENT: ${{ github.event_name }}
+          REPO: ${{ github.repository }}
+          ACTOR: ${{ github.actor }}
+          REF_NAME: ${{ github.ref_name }}
+          COMPARE_URL: ${{ github.event.compare }}
+          COMMITS_JSON: ${{ toJson(github.event.commits) }}
+          PR_JSON: ${{ toJson(github.event.pull_request) }}
+          ISSUE_JSON: ${{ toJson(github.event.issue) }}
+          ACTION: ${{ github.event.action }}
+          NUMBER: ${{ github.event.number }}
         run: |
-          EVENT="${{ github.event_name }}"
-
           if [ "$EVENT" = "push" ]; then
-            MSG="🚀 **Push** to \`${{ github.ref_name }}\` in **${{ github.repository }}** by **${{ github.actor }}**\n• Message: ${{ github.event.head_commit.message }}\n• Compare: ${{ github.event.compare }}"
-          elif [ "$EVENT" = "pull_request" ]; then
-            MSG="🔀 **PR ${{ github.event.action }}** #${{ github.event.number }} by **${{ github.actor }}** in **${{ github.repository }}**\n• Title: ${{ github.event.pull_request.title }}\n• From \`${{ github.event.pull_request.head.ref }}\` → \`${{ github.event.pull_request.base.ref }}\`\n• Link: ${{ github.event.pull_request.html_url }}"
-          elif [ "$EVENT" = "issues" ]; then
-            MSG="📌 **Issue ${{ github.event.action }}** #${{ github.event.issue.number }} by **${{ github.actor }}** in **${{ github.repository }}**\n• Title: ${{ github.event.issue.title }}\n• Link: ${{ github.event.issue.html_url }}"
-          else
-            MSG="ℹ️ Event: $EVENT in **${{ github.repository }}** by **${{ github.actor }}**"
-          fi
+            # Lấy tối đa 5 commit, gom thành các dòng có: id rút gọn, tác giả, message, +added -removed ~modified
+            LINES=$(echo "$COMMITS_JSON" | jq -r '
+              (.[0:5] // [])[]
+              | "- [`\(.id[0:7])`](\(.url)) by **\(.author.username // .author.name // "unknown")**: \((.message // "") | gsub("\n"; " ")) (+\((.added // [])|length) -\((.removed // [])|length) ~\((.modified // [])|length))"
+            ')
 
-          # Escape JSON safely (quotes + newlines)
-          MSG_JSON="${MSG//\"/\\\"}"
-          MSG_JSON="${MSG_JSON//$'\n'/\\n}"
+            # Nếu không có commit (trường hợp hiếm), để dòng fallback
+            if [ -z "$LINES" ]; then
+              LINES="(no commit details available)"
+            fi
+
+            TITLE="🚀 Push to \`$REF_NAME\` — $REPO"
+            DESC="**Pusher:** $ACTOR\n**Compare:** $COMPARE_URL\n\n$LINES"
+
+            PAYLOAD=$(jq -n --arg t "$TITLE" --arg d "$DESC" --arg url "$COMPARE_URL" \
+              '{embeds:[{title:$t, description:$d, url:$url, color:5814783}]}')
+
+          elif [ "$EVENT" = "pull_request" ]; then
+            TITLE=$(echo "$PR_JSON" | jq -r '"🔀 PR #\(.number) \(.state | ascii_upcase) — \(.title)"')
+            FROM=$(echo "$PR_JSON" | jq -r '.head.ref')
+            TO=$(echo "$PR_JSON" | jq -r '.base.ref')
+            LINK=$(echo "$PR_JSON" | jq -r '.html_url')
+            USER=$(echo "$PR_JSON" | jq -r '.user.login')
+            ADD=$(echo "$PR_JSON" | jq -r '.additions // 0')
+            DEL=$(echo "$PR_JSON" | jq -r '.deletions // 0')
+            CHG=$(echo "$PR_JSON" | jq -r '.changed_files // 0')
+
+            DESC="**Action:** $ACTION by **$ACTOR** (author: **$USER**)\n**Branch:** \`$FROM\` → \`$TO\`\n**Diff:** +$ADD -$DEL ($CHG files)\n**Link:** $LINK"
+
+            PAYLOAD=$(jq -n --arg t "$TITLE" --arg d "$DESC" --arg url "$LINK" \
+              '{embeds:[{title:$t, description:$d, url:$url, color:3447003}]}')
+
+          elif [ "$EVENT" = "issues" ]; then
+            TITLE=$(echo "$ISSUE_JSON" | jq -r '"📌 Issue #\(.number) \(.state | ascii_upcase) — \(.title)"')
+            LINK=$(echo "$ISSUE_JSON" | jq -r '.html_url')
+            USER=$(echo "$ISSUE_JSON" | jq -r '.user.login')
+            DESC="**Action:** $ACTION by **$ACTOR** (author: **$USER**)\n**Link:** $LINK"
+
+            PAYLOAD=$(jq -n --arg t "$TITLE" --arg d "$DESC" --arg url "$LINK" \
+              '{embeds:[{title:$t, description:$d, url:$url, color:15105570}]}')
+
+          else
+            TITLE="ℹ️ $EVENT — $REPO"
+            DESC="Actor: **$ACTOR**"
+            PAYLOAD=$(jq -n --arg t "$TITLE" --arg d "$DESC" \
+              '{embeds:[{title:$t, description:$d, color:9807270}]}')
+          fi
 
           curl -H "Content-Type: application/json" \
                -X POST \
-               -d "{ \"content\": \"${MSG_JSON}\" }" \
+               -d "$PAYLOAD" \
                "$WEBHOOK"
