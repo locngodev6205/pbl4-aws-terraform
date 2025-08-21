@@ -1,15 +1,25 @@
-name: GitHub to Discord - Pro
+name: GitHub → Discord (Pro)
 
 on:
-  push:
   pull_request:
+    types: [opened, reopened, synchronize, closed]
+  push:
+    branches: [main]
   issues:
+    types: [opened, reopened, closed]
 
 permissions:
   contents: read
 
+# Tránh spam nếu có nhiều run song song
+concurrency:
+  group: discord-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   notify:
+    # Né case push đầu tiên của repo/branch (before = 0000… hoặc event.created)
+    if: ${{ github.event_name != 'push' || (github.event.before != '0000000000000000000000000000000000000000' && !github.event.created) }}
     runs-on: ubuntu-latest
     steps:
       - name: Send rich Discord embed
@@ -18,6 +28,7 @@ jobs:
           WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         with:
           script: |
+            // context, core, github, fetch có sẵn trong github-script
             const webhook = process.env.WEBHOOK;
             if (!webhook) {
               core.setFailed('Missing DISCORD_WEBHOOK secret');
@@ -29,6 +40,7 @@ jobs:
             const actor = context.actor;
             const avatar = context.payload?.sender?.avatar_url;
             const nowISO = new Date().toISOString();
+            const trim = (s, n) => (s || '').length > n ? s.slice(0, n - 1) + '…' : (s || '');
 
             const COLORS = {
               push: 5814783,              // blue
@@ -58,45 +70,49 @@ jobs:
               }
             };
 
-            const trim = (s, n) => (s || '').length > n ? s.slice(0, n - 1) + '…' : (s || '');
-
-            // ===== PUSH =====
+            // ===== PUSH → chỉ nhánh main =====
             if (context.eventName === 'push') {
               const ref = context.ref.replace('refs/heads/', '');
               const before = context.payload.before;
               const after  = context.payload.after;
 
-              // Compare to get accurate file & line counts
-              const cmp = await github.rest.repos.compareCommits({
-                owner: context.repo.owner,
-                repo:  context.repo.repo,
-                base:  before,
-                head:  after
-              });
-
+              let compareUrl = `${context.payload.repository?.html_url}/compare/${before.slice(0,7)}...${after.slice(0,7)}`;
               let addedFiles = 0, removedFiles = 0, modifiedFiles = 0;
               let linesAdded = 0, linesDeleted = 0;
+              let commitLines = '(no commit details)';
 
-              for (const f of (cmp.data.files || [])) {
-                const st = f.status; // added | removed | modified | renamed | changed
-                if (st === 'added') addedFiles++;
-                else if (st === 'removed') removedFiles++;
-                else modifiedFiles++; // count modified/renamed as modified
-                linesAdded  += f.additions  || 0;
-                linesDeleted += f.deletions  || 0;
-              }
+              try {
+                const cmp = await github.rest.repos.compareCommits({
+                  owner: context.repo.owner,
+                  repo:  context.repo.repo,
+                  base:  before,
+                  head:  after
+                });
 
-              const commits = (cmp.data.commits || []).slice(-5);
-              const commitLines = commits.length
-                ? commits.map(c => {
+                for (const f of (cmp.data.files || [])) {
+                  const st = f.status; // added | removed | modified | renamed | changed
+                  if (st === 'added') addedFiles++;
+                  else if (st === 'removed') removedFiles++;
+                  else modifiedFiles++; // tính renamed/changed là modified
+                  linesAdded  += f.additions  || 0;
+                  linesDeleted += f.deletions  || 0;
+                }
+
+                const commits = (cmp.data.commits || []).slice(-5);
+                if (commits.length) {
+                  commitLines = commits.map(c => {
                     const sha = c.sha.slice(0,7);
                     const who = c.author?.login || c.commit?.author?.name || 'unknown';
                     const msg = trim(String(c.commit?.message || '').split('\n')[0], 140);
                     return `- [\`${sha}\`](${c.html_url}) by **${who}**: ${msg}`;
-                  }).join('\n')
-                : '(no commit details)';
+                  }).join('\n');
+                }
 
-              const compareUrl = cmp.data.html_url;
+                compareUrl = cmp.data.html_url || compareUrl;
+              } catch (e) {
+                // Fallback: vẫn gửi thông báo tối thiểu
+                console.log('compareCommits failed, fallback message. Reason:', e.message);
+              }
 
               const embed = {
                 ...baseEmbed(COLORS.push),
