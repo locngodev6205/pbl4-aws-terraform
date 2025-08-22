@@ -1,0 +1,11 @@
+# Terraform-specific files
+*.tfstate
+*.tfstate.*
+.terraform/
+*.tfvars
+
+# Crash log files
+crash.log
+
+# Injected by terraform providers
+.terraform.lock.hcl
