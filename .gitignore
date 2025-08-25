@@ -1,11 +1,5 @@
-# Terraform-specific files
-*.tfstate
-*.tfstate.*
 .terraform/
-*.tfvars
-
-# Crash log files
+*.tfstate
+*.tfstate.backup
 crash.log
-
-# Injected by terraform providers
-.terraform.lock.hcl
+# terraform.tfvars chỉ ignore nếu chứa secrets
