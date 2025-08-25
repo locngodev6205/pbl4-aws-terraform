@@ -1,0 +1,97 @@
+digraph PBL_AWS_SQUARE_V3 {
+  graph [
+    rankdir=TB, splines=ortho, compound=true,
+    fontsize=12, fontname="Segoe UI, Helvetica, Arial",
+    nodesep=0.75, ranksep=1.0, pad=0.3, margin=0.12,
+    labelloc="b",
+    label=<
+      <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+        <TR>
+          <TD>Public = green</TD>
+          <TD>Private = amber</TD>
+          <TD>Solid = Week 2</TD>
+          <TD>Dashed = Week 4</TD>
+          <TD>Edges = orthogonal</TD>
+        </TR>
+      </TABLE>
+    >
+  ];
+  node [shape=box, fontname="Segoe UI, Helvetica, Arial"];
+  edge [fontname="Segoe UI, Helvetica, Arial", color="#111827"];
+
+  { rank=same;
+    Internet [label="Internet", shape=oval, style=filled, fillcolor="#F3F4F6"];
+    Admin    [label="Admin (TEAM_IP/32)", shape=oval, style=filled, fillcolor="#F3F4F6"];
+  }
+
+  IGW [label="Internet Gateway (IGW)", shape=hexagon, style="rounded,filled", fillcolor="#E0F2FE"];
+
+  // ================== VPC ==================
+  subgraph cluster_vpc {
+    label="VPC 10.10.0.0/16";
+    color="#2563EB"; style="rounded"; penwidth=1.6; bgcolor="#EFF6FF";
+
+    // ---- Public Subnet ----
+    subgraph cluster_public {
+      label="Public Subnet 10.10.1.0/24 (ap-southeast-1a)";
+      color="#10B981"; style="rounded,filled"; fillcolor="#ECFDF5";
+
+      RTpub [label="Route Table (public)\n0.0.0.0/0 → IGW", shape=tab, style=filled, fillcolor="#D1FAE5"];
+
+      EC2 [label=<
+        <b>EC2 Web</b><br/>Ubuntu + Nginx<br/>Elastic IP
+      >, shape=box3d, style="rounded,filled", fillcolor="#EDE9FE"];
+
+      SGweb [label=<
+        <b>SG: web_sg</b><br align="left"/>
+        80/443 → 0.0.0.0/0<br align="left"/>
+        22 → TEAM_IP/32
+      >, shape=note, style="filled", fillcolor="#FEF3C7"];
+    }
+
+    // ---- Private Subnets (1 cluster, 2 boxes) ----
+    subgraph cluster_private {
+      label="Private Subnets (ap-southeast-1a/b)";
+      color="#F59E0B"; style="rounded,filled"; fillcolor="#FFFBEB";
+
+      PA  [label="Private 10.10.2.0/24 (1a)", shape=box, style="rounded,filled", fillcolor="#FFFBEB"];
+      PB  [label="Private 10.10.3.0/24 (1b)", shape=box, style="rounded,filled", fillcolor="#FFFBEB"];
+      { rank=same; PA; PB; }
+
+      RDSa [label=<
+        <b>RDS MySQL</b><br/>[placeholder - Week 4]
+      >, shape=cylinder, style="dashed,filled", fillcolor="#FFF7ED"];
+
+      RDSb [label=<
+        <b>RDS MySQL</b><br/>[placeholder - Week 4]
+      >, shape=cylinder, style="dashed,filled", fillcolor="#FFF7ED"];
+
+      // canh hàng: RDS dưới mỗi subnet (edge vô hình)
+      PA -> RDSa [style=invis, weight=6];
+      PB -> RDSb [style=invis, weight=6];
+
+      DBSubnetGroup [label="DB Subnet Group\n(private a + b)", shape=component, style="dashed,filled", fillcolor="#F3E8FF"];
+      SGdb [label=<
+        <b>SG: db_sg</b><br align="left"/>3306 ← web_sg
+      >, shape=note, style="filled", fillcolor="#E0E7FF"];
+    }
+  }
+
+  // ===== Flows (xlabel để gọn, hợp orthogonal) =====
+  Internet -> IGW [xlabel="public routing"];
+  IGW      -> RTpub [xlabel="attachment", style=dashed, color="#6B7280"];
+  RTpub    -> EC2   [xlabel="subnet association", style=dashed, color="#6B7280"];
+
+  SGweb -> EC2  [xlabel="applied", style=dotted, color="#6B7280"];
+  SGdb  -> RDSa [xlabel="applied", style=dotted, color="#6B7280"];
+  SGdb  -> RDSb [xlabel="applied", style=dotted, color="#6B7280"];
+
+  Internet -> EC2 [xlabel="HTTP/HTTPS 80/443", color="#059669", penwidth=1.6];
+  Admin    -> EC2 [xlabel="SSH 22",            color="#2563EB", penwidth=1.6];
+
+  EC2 -> RDSa [xlabel="MySQL 3306 (source: web_sg)", color="#DC2626", style=dashed];
+  EC2 -> RDSb [xlabel="MySQL 3306 (source: web_sg)", color="#DC2626", style=dashed];
+
+  DBSubnetGroup -> RDSa [style=dashed, color="#6B7280", xlabel="placed in"];
+  DBSubnetGroup -> RDSb [style=dashed, color="#6B7280", xlabel="placed in"];
+}
