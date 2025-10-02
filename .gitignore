@@ -1,5 +1,0 @@
-.terraform/
-*.tfstate
-*.tfstate.backup
-crash.log
-# terraform.tfvars chỉ ignore nếu chứa secrets

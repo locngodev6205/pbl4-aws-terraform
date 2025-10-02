@@ -1,2 +1,0 @@
-# pbl4-aws-terraform
-PBL4 — Triển khai website AWS bằng Terraform
