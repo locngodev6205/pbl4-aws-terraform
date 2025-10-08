@@ -13,7 +13,7 @@ output "web_target_group_arn" {
 output "alb_zone_id" {
   value = aws_lb.external.zone_id
 }
-//
+
 output "internal_alb_arn" {
   value = aws_lb.internal.arn
 }

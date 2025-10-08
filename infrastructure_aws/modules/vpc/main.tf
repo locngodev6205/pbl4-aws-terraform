@@ -61,7 +61,7 @@ resource "aws_nat_gateway" "nat_gw" {
     Name = "${var.project_name}-nat-gw"
   }
 
-  depends_on = [aws_internet_gateway.igw]
+  depends_on = [aws_internet_gateway.igw] # Internet gateway phải được tạo ra trước để có public subnet đặt nat gateway
 }
 
 # Public Route Table
