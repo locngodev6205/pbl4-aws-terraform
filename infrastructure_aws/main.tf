@@ -7,8 +7,8 @@ module "vpc" {
   project_name      = var.project_name
   availability_zones = var.availability_zones
 
-  public_subnet     = ["10.0.1.0/24", "10.0.2.0/24"]
-  private_subnet    = ["10.0.11.0/24", "10.0.12.0/24", "10.0.21.0/24", "10.0.22.0/24", "10.0.31.0/24", "10.0.32.0/24"]
+  public_subnet     = var.public_subnet_cidrs
+  private_subnet    = var.private_subnet_cidrs
 }
 
 # Security Module
@@ -65,4 +65,20 @@ module "asg" {
 
   # Key pair for EC2 instances (optional)
   key_pair_name = var.key_pair_name
+}
+
+module "nacl" {
+  source = "./modules/nacl"
+
+  project_name = var.project_name
+  vpc_id = module.vpc.vpc_id
+  public_subnet_ids = module.vpc.public_subnet_ids
+  private_web_subnet_ids = module.vpc.private_web_subnet_ids
+  private_app_subnet_ids = module.vpc.private_app_subnet_ids
+  private_db_subnet_ids = module.vpc.private_db_subnet_ids
+
+  public_subnet_cidrs = var.public_subnet_cidrs
+  web_private_subnet_cidrs = slice(var.private_subnet_cidrs, 0, 2)
+  app_private_subnet_cidrs = slice(var.private_subnet_cidrs, 2, 4)
+  db_private_subnet_cidrs = slice(var.private_subnet_cidrs, 4, 6)
 }

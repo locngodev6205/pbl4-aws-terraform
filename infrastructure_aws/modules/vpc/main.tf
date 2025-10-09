@@ -99,44 +99,30 @@ resource "aws_route_table" "private" {
   }
 }
 
-# resource "aws_route_table" "private-nat" {
-#   vpc_id = aws_vpc.main.id
-
-#   route {
-#     cidr_block     = "0.0.0.0/0"
-#     nat_gateway_id = aws_nat_gateway.nat_gw.id
-#   }
-
-#   tags = {
-#     Name = "${var.project_name}-private-web-rt"
-#   }
-# }
-
-# resource "aws_route_table" "private" {
-#   vpc_id = aws_vpc.main.id
-
-#   tags = {
-#     Name = "${var.project_name}-private-app-db-rt"
-#   }
-# }
-
-
-
 # Associate Private Subnets with Private Route Table
-resource "aws_route_table_association" "private" {
-  count          = length(var.private_subnet)
+# resource "aws_route_table_association" "private" {
+#   count          = length(var.private_subnet)
+#   subnet_id      = aws_subnet.private[count.index].id
+#   route_table_id = aws_route_table.private.id
+# }
+
+# Chỉ web và app cần igw
+resource "aws_route_table_association" "private_web_app" {
+  count          = 4
   subnet_id      = aws_subnet.private[count.index].id
   route_table_id = aws_route_table.private.id
 }
 
-# resource "aws_route_table_association" "private_web" {
-#   count          = 2  # Chỉ 2 subnet đầu tiên
-#   subnet_id      = aws_subnet.private[count.index].id
-#   route_table_id = aws_route_table.private_with_nat.id
-# }
+resource "aws_route_table" "db_private" {
+  vpc_id = aws_vpc.main.id
 
-# resource "aws_route_table_association" "private_app_db" {
-#   count          = length(var.private_subnet) - 2  # 4 subnet còn lại
-#   subnet_id      = aws_subnet.private[count.index + 2].id  # Bắt đầu từ index 2
-#   route_table_id = aws_route_table.private_without_nat.id
-# }
+  tags = {
+    Name = "${var.project_name}-db-private-rt"
+  }
+}
+
+resource "aws_route_table_association" "db_private" {
+  count          = 2
+  subnet_id      = aws_subnet.private[count.index + 4].id
+  route_table_id = aws_route_table.db_private.id
+}
