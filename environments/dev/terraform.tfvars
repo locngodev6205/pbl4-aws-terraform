@@ -13,5 +13,6 @@ allowed_ssh_cidrs = ["116.110.220.82/32"]
 key_name        = "pbl4-team"
 public_key_path = "C:/Users/LEGION/.ssh/pbl4.pub"
 
+alert_email = "dat11022005@gmail.com"
 db_username = "pbl4user"
 db_password = "Super-Secret-Password-123!"

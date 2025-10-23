@@ -19,3 +19,8 @@ variable "db_password" {
   description = "Password for the RDS database."
   sensitive   = true # 'sensitive = true' sẽ giấu giá trị này trong log.
 }
+
+variable "alert_email" {
+  type        = string
+  description = "Email nhận cảnh báo CloudWatch."
+}
