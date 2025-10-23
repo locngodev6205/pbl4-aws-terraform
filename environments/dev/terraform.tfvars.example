@@ -1,0 +1,3 @@
+# Sao chép file này thành terraform.tfvars và điền giá trị thực
+db_username = "pbl4user"
+db_password = "ChangeMe_123!"

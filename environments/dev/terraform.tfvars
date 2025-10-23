@@ -8,7 +8,10 @@ private_subnet_cidrs = ["10.10.2.0/24", "10.10.3.0/24"]
 azs                  = ["ap-southeast-1a", "ap-southeast-1b"]
 
 instance_type     = "t3.micro"
-allowed_ssh_cidrs = ["116.110.8.246/32"]
+allowed_ssh_cidrs = ["116.110.220.82/32"]
 
 key_name        = "pbl4-team"
 public_key_path = "C:/Users/LEGION/.ssh/pbl4.pub"
+
+db_username = "pbl4user"
+db_password = "Super-Secret-Password-123!"
