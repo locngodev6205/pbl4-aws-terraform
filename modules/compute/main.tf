@@ -1,4 +1,6 @@
-locals { user_data = try(file(var.user_data_path), "") }
+locals {
+  user_data_file = try(file(var.user_data_path), "")
+}
 
 resource "aws_instance" "web" {
   ami                         = var.ami_id
@@ -7,8 +9,12 @@ resource "aws_instance" "web" {
   vpc_security_group_ids      = var.security_group_ids
   key_name                    = var.key_name
   associate_public_ip_address = true
-  user_data                   = local.user_data
-  tags                        = merge(var.tags, { Name = "pbl-web-ec2" })
+
+  # Ưu tiên dùng user_data dạng chuỗi, nếu không có thì fallback sang file
+  user_data                   = coalesce(var.user_data, local.user_data_file)
+  user_data_replace_on_change = var.user_data_replace_on_change
+
+  tags = merge(var.tags, { Name = "pbl-web-ec2" })
 }
 
 resource "aws_eip" "this" {
