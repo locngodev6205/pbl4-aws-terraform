@@ -1,6 +1,46 @@
-.terraform/
+# --- Terraform runtime ---
+.terraform/                      # thư mục plugin local
+**/.terraform/**
 *.tfstate
-*.tfstate.backup
+*.tfstate.*
 crash.log
-# terraform.tfvars chỉ ignore nếu chứa secrets
-environments/*/terraform.tfvars
+crash.*.log
+
+# Kế hoạch apply/export tạm
+*.tfplan
+*.plan
+*.out
+
+# File biến cục bộ có thể chứa secrets
+*.tfvars
+*.tfvars.json
+*.auto.tfvars
+*.auto.tfvars.json
+environments/*/terraform.tfvars  # bạn đã dùng cách này là đúng
+
+# File override cục bộ
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# KHÔNG ignore file lock – phải commit để “pin” phiên bản provider
+!*.lock.hcl
+
+!terraform.tfvars.example
+
+# Khóa/credentials lỡ để cạnh repo
+*.pem
+*.key
+*.p12
+*.crt
+*.cer
+*.der
+*.pub
+.ssh/
+
+# Máy dev
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

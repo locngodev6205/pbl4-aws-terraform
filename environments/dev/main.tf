@@ -4,6 +4,13 @@ terraform {
 }
 provider "aws" { region = var.region }
 
+locals {
+  tags = {
+    project = var.project
+    env     = var.env
+  }
+}
+
 # Tự động tìm AMI Ubuntu mới nhất
 data "aws_ami" "ubuntu" {
   most_recent = true
@@ -19,6 +26,11 @@ data "aws_ami" "ubuntu" {
     values = ["hvm"]
   }
 }
+
+# Lấy thông tin về tài khoản AWS hiện tại (như Account ID)
+# Chúng ta đã có khối này trong module IAM, nhưng nó cần được khai báo lại
+# ở đây vì đây là một "root module" riêng biệt.
+data "aws_caller_identity" "me" {}
 
 # Tải public key từ máy local lên AWS để tạo Key Pair
 resource "aws_key_pair" "team" {
@@ -145,19 +157,94 @@ module "compute" {
 
 module "iam" {
   source = "../../modules/iam"
+  region = var.region
   tags   = { project = var.project, env = var.env }
 }
 
-# --- ĐỊNH NGHĨA CÁC KẾT QUẢ ĐẦU RA ---
-output "web_public_ip" {
-  value       = module.compute.public_ip
-  description = "Public IP address of the EC2 instance."
+# --- HỆ THỐNG KIỂM TOÁN (AUDIT LOGGING) VỚI CLOUDTRAIL ---
+
+# 1. Tạo một S3 Bucket an toàn để lưu trữ logs của CloudTrail
+resource "aws_s3_bucket" "trail" {
+  # Tên bucket phải là duy nhất trên toàn cầu, nên chúng ta thêm Account ID và Region vào
+  bucket        = "pbl4-cloudtrail-${data.aws_caller_identity.me.account_id}-${var.region}"
+  force_destroy = true # Cho phép xóa bucket dễ dàng khi destroy
+  tags          = local.tags
 }
-output "web_url" {
-  value       = "http://${module.compute.public_ip}"
-  description = "URL to access the web server."
+
+resource "aws_s3_bucket_versioning" "trail" {
+  bucket = aws_s3_bucket.trail.id
+  versioning_configuration {
+    status = "Enabled"
+  }
 }
-output "rds_endpoint" {
-  value       = module.db.endpoint
-  description = "The connection endpoint for the RDS instance."
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "trail" {
+  bucket = aws_s3_bucket.trail.id
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "trail" {
+  bucket                  = aws_s3_bucket.trail.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+# 2. Tạo một "Giấy phép" (Policy) cho phép dịch vụ CloudTrail được ghi file vào Bucket này
+data "aws_iam_policy_document" "trail_bucket_policy" {
+  statement {
+    sid       = "AWSCloudTrailWrite"
+    effect    = "Allow"
+    actions   = ["s3:PutObject"]
+    resources = ["${aws_s3_bucket.trail.arn}/AWSLogs/${data.aws_caller_identity.me.account_id}/*"]
+    principals {
+      type        = "Service"
+      identifiers = ["cloudtrail.amazonaws.com"]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "s3:x-amz-acl"
+      values   = ["bucket-owner-full-control"]
+    }
+  }
+  statement {
+    sid       = "AWSCloudTrailAclCheck"
+    effect    = "Allow"
+    actions   = ["s3:GetBucketAcl"]
+    resources = [aws_s3_bucket.trail.arn]
+    principals {
+      type        = "Service"
+      identifiers = ["cloudtrail.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_s3_bucket_policy" "trail" {
+  bucket = aws_s3_bucket.trail.id
+  policy = data.aws_iam_policy_document.trail_bucket_policy.json
+}
+
+# 3. Tạo "Hệ thống Camera" (Trail) và chỉ định nơi lưu "băng ghi hình"
+resource "aws_cloudtrail" "this" {
+  name                          = "pbl4-main-trail"
+  s3_bucket_name                = aws_s3_bucket.trail.id
+  is_multi_region_trail         = true # Ghi lại hoạt động ở tất cả các region
+  include_global_service_events = true
+  enable_log_file_validation    = true
+
+  # Chỉ định loại sự kiện cần ghi lại
+  event_selector {
+    read_write_type           = "All" # Ghi lại cả hành động đọc và ghi
+    include_management_events = true
+  }
+
+  # Đảm bảo Policy của Bucket được tạo xong trước khi tạo Trail
+  depends_on = [aws_s3_bucket_policy.trail]
+
+  tags = local.tags
 }

@@ -16,6 +16,16 @@ resource "aws_instance" "web" {
   user_data_replace_on_change = var.user_data_replace_on_change
 
   tags = merge(var.tags, { Name = "pbl-web-ec2" })
+
+  # Bắt buộc metadata service phải dùng token (bảo mật hơn)
+  metadata_options {
+    http_tokens = "required"
+  }
+
+  # Bật mã hóa cho ổ đĩa gốc
+  root_block_device {
+    encrypted = true
+  }
 }
 
 resource "aws_eip" "this" {
