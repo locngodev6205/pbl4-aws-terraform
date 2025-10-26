@@ -89,6 +89,13 @@ cat >/var/www/html/index.html <<'EOF'
 </div></body></html>
 EOF
 
+# xóa trang mặc định của Ubuntu Nginx (nếu có)
+rm -f /var/www/html/index.nginx-debian.html
+
+# reload nginx để nhận file mới
+systemctl enable nginx
+systemctl restart nginx
+
 cat >/var/www/html/dbcheck.php <<'PHP'
 <?php
 $host = getenv('DB_HOST');

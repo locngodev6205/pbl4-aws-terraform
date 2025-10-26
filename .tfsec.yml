@@ -1,0 +1,34 @@
+# .tfsec.yml
+exclude:
+  # Lý do: Chấp nhận dùng mã hóa mặc định của AWS (SSE-S3/SSE-DynamoDB) 
+  # để tiết kiệm chi phí tạo KMS key riêng.
+  - aws-s3-encryption-customer-key
+  - aws-dynamodb-table-customer-key
+
+  # Lý do: Quyền wildcard cho KMS Decrypt là có kiểm soát (qua condition) và cần thiết.
+  - aws-iam-no-policy-wildcards
+
+  # Lý do: Public subnet là một phần trong thiết kế kiến trúc.
+  - aws-ec2-no-public-ip-subnet
+
+  # Lý do: Đây là môi trường dev, chủ động tắt các tính năng enterprise
+  # (backup, deletion protection...) để tiết kiệm chi phí và dễ dàng destroy.
+  - aws-rds-specify-backup-retention
+  - aws-rds-deletion-protection
+  - aws-rds-enable-performance-insights
+  - aws-rds-enable-iam-auth
+  - aws-dynamodb-enable-recovery
+
+  # Lý do: Các tính năng logging/monitoring nâng cao này có thể gây tốn chi phí
+  # không cần thiết cho môi trường dev.
+  - aws-cloudtrail-enable-at-rest-encryption
+  - aws-cloudtrail-ensure-cloudwatch-integration
+  - aws-sns-enable-topic-encryption
+  - aws-ec2-require-vpc-flow-logs-for-all-vpcs
+  - aws-s3-enable-bucket-logging
+
+  # Lý do: Bỏ qua các yêu cầu versioning/deletion protection cho các bucket
+  # không quan trọng trong môi trường dev.
+  - aws-s3-enable-versioning   # bỏ qua yêu cầu versioning cho CloudTrail bucket
+  - AWS0177                    # bỏ qua yêu cầu RDS deletion protection
+  - aws-rds-enable-deletion-protection
