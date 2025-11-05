@@ -18,7 +18,10 @@ resource "aws_launch_template" "web" {
     name = var.ec2_instance_profile_name
   }
 
-  user_data = base64encode("${path.module}/user_data_web.sh")
+  user_data = base64encode(templatefile("${path.module}/user_data_web.sh.tftpl", {
+  internal_alb_dns_name = var.internal_alb_dns_name
+  project_name          = var.project_name
+  }))
 
   tag_specifications {
     resource_type = "instance"
@@ -97,7 +100,14 @@ resource "aws_launch_template" "app" {
     name = var.ec2_instance_profile_name
   }
 
-  user_data = base64encode("${path.module}/user_data_app.sh")
+  user_data = base64encode(templatefile("${path.module}/user_data_app.sh.tftpl", {
+      db_host      = var.db_host
+      db_username  = var.db_username
+      db_password  = var.db_password
+      db_name      = var.db_name
+      project_name = var.project_name
+      shop_url     = "http://${var.alb_dns_name}/" # URL của shop
+  }))
 
   tag_specifications {
     resource_type = "instance"

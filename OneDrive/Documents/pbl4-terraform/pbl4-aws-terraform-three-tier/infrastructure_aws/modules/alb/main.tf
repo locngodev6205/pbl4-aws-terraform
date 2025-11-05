@@ -26,11 +26,11 @@ resource "aws_lb_target_group" "web" {
   health_check {
     enabled             = true
     interval            = 30
-    path                = "/"
+    path                = "/health"
     timeout             = 5
     unhealthy_threshold = 2
     healthy_threshold   = 2
-    matcher             = "200"
+    matcher             = "200-399"
   }
 
 
@@ -90,11 +90,11 @@ resource "aws_lb_target_group" "app" {
   health_check {
     enabled             = true
     interval            = 30
-    path                = "/api/get_messages.php"
+    path                = "/health.txt"
     timeout             = 5
     unhealthy_threshold = 2
     healthy_threshold   = 2
-    matcher             = "200"
+    matcher             = "200-399"
   }
 
   tags = {

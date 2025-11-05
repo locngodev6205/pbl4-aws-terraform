@@ -12,7 +12,7 @@ variable "web_ami_id" {
 variable "app_ami_id" {
   description = "AMI ID for app"
   type        = string
-  default     = "ami-018afc7626343eebe"
+  default     = "ami-0540d3917795ab713"
 }
 
 variable "instance_type" {
@@ -101,5 +101,10 @@ variable "db_name" {
 
 variable "ec2_instance_profile_name" {
   description = "The name of the IAM instance profile for EC2"
+  type        = string
+}
+
+variable "alb_dns_name" {
+  description = "DNS name of the ALB"
   type        = string
 }

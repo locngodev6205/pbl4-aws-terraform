@@ -42,5 +42,20 @@ variable "key_pair_name" {
 variable "my_ip" {
   description = "Your home or office IP address for SSH access"
   type        = string
-  default     = "123.26.69.138/32" 
+  default     = "117.3.54.230/32" 
 }
+
+# variable "project_name" {
+#   description = "Name of the project"
+#   type        = string
+# }
+
+# variable "vpc_id" {
+#   description = "ID of the VPC"
+#   type        = string
+# }
+
+# variable "my_ip" {
+#   description = "IP address for SSH access"
+#   type        = string
+# }
