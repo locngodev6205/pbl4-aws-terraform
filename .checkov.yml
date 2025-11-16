@@ -1,0 +1,43 @@
+# .checkov.yml
+framework:
+  - terraform
+# Bỏ qua các thư mục không chứa code Terraform chính
+skip-path:
+  - .github
+  - web-demo
+  - diagrams
+
+# Danh sách các luật mà chúng ta chấp nhận bỏ qua trong môi trường dev
+skip-check:
+  # Chấp nhận EC2 có IP public (đây là thiết kế)
+  - CKV_AWS_88
+  - CKV_AWS_260
+
+  # Bỏ qua các yêu cầu về tính năng enterprise/tốn phí cho RDS
+  - CKV_AWS_133 # RDS backup policy
+  - CKV_AWS_161 # RDS IAM Auth
+  - CKV_AWS_293 # RDS Deletion Protection
+  - CKV_AWS_157 # RDS Multi-AZ
+  - CKV_AWS_118 # RDS Enhanced Monitoring
+  - CKV_AWS_129 # RDS Log Exports
+  
+  # Bỏ qua các yêu cầu về mã hóa bằng KMS key riêng
+  - CKV_AWS_119 # DynamoDB KMS
+  - CKV_AWS_337 # SSM KMS
+  - CKV_AWS_26  # SNS KMS
+  - CKV_AWS_35  # CloudTrail KMS
+  - CKV_AWS_145 # S3 KMS
+
+  # Bỏ qua các yêu cầu về logging/monitoring nâng cao có thể tốn phí
+  - CKV2_AWS_10 # CloudTrail to CloudWatch
+  - CKV_AWS_252 # CloudTrail SNS
+  - CKV2_AWS_11 # VPC Flow Logs
+  - CKV_AWS_18  # S3 Access Logging
+  - CKV2_AWS_61 # S3 Lifecycle
+  - CKV2_AWS_62 # S3 Event Notifications
+  - CKV_AWS_144 # S3 Cross-region replication
+
+  # Bỏ qua các lỗi "báo động giả"
+  - CKV2_AWS_5  # Security Group not attached
+  - CKV_AWS_111 # IAM write access without constraints (cho CloudWatch Agent)
+  - CKV_AWS_356 # IAM resource "*" (cho CloudWatch Agent)

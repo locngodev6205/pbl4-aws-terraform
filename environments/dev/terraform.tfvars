@@ -14,3 +14,5 @@ key_name        = "pbl4-team"
 public_key_path = "C:/Users/LEGION/.ssh/pbl4.pub"
 
 alert_email = "dat11022005@gmail.com"
+
+backup_retention_period = 1
