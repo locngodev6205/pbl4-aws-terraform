@@ -64,11 +64,11 @@ variable "deletion_protection" {
   default     = false
 }
 
-variable "backup_retention_period" {
-  description = "The days to retain backups for."
-  type        = number
-  default     = 0 # Tắt backup cho môi trường dev
-}
+# variable "backup_retention_period" {
+#   description = "The days to retain backups for."
+#   type        = number
+#   default     = 0 # Tắt backup cho môi trường dev
+# }
 
 variable "tags" {
   description = "A map of tags to assign to the resource."
@@ -77,6 +77,7 @@ variable "tags" {
 }
 
 variable "backup_retention_period" {
-  type    = number
-  default = 1
-} # Sửa default từ 0 thành 1
+  description = "The days to retain backups for."
+  type        = number
+  default     = 1 # Sửa default từ 0 thành 1
+}
