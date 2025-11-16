@@ -24,4 +24,8 @@ resource "aws_db_instance" "this" {
   tags = merge(var.tags, { Name = "pbl4-rds" })
 
   storage_encrypted = true
+
+  copy_tags_to_snapshot      = true
+  auto_minor_version_upgrade = true
+  # backup_retention_period đã có, chúng ta sẽ đặt giá trị cho nó ở .tfvars
 }

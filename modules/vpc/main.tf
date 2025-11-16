@@ -48,3 +48,13 @@ resource "aws_db_subnet_group" "db" {
   subnet_ids = [for s in aws_subnet.private : s.id]
   tags       = merge(var.tags, { Name = "pbl-db-subnet-group" })
 }
+
+resource "aws_default_security_group" "this" {
+  vpc_id = aws_vpc.this.id
+
+  # Xóa hết các luật mặc định nguy hiểm
+  ingress = []
+  egress  = []
+
+  tags = merge(var.tags, { Name = "pbl-default-sg-locked" })
+}

@@ -24,3 +24,9 @@ variable "alert_email" {
   type        = string
   description = "Email nhận cảnh báo CloudWatch."
 }
+
+variable "backup_retention_period" {
+  description = "The number of days to retain backups for the RDS instance."
+  type        = number
+  default     = 1 # Có thể đặt default ở đây hoặc trong .tfvars
+}

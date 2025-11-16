@@ -75,3 +75,8 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "backup_retention_period" {
+  type    = number
+  default = 1
+} # Sửa default từ 0 thành 1
