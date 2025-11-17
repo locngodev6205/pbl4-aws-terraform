@@ -4,6 +4,12 @@ variable "project_name" {
   default     = "pbl4-three-tier"
 }
 
+variable "aws_region" {
+  description = "AWS region for the infrastructure"
+  type        = string
+  default     = "ap-southeast-1"
+}
+
 variable "availability_zones" {
   description = "List of availability zones"
   type        = list(string)
@@ -31,8 +37,7 @@ variable "db_username" {
 variable "db_password" {
   description = "DB master password"
   type        = string
-  sensitive   = true
-  default     = "pbl4_123456"
+  # default     = "pbl4-123456" # Đã đưa lên terraform cloud (Hashicorp)
 }
 
 variable "key_pair_name" {

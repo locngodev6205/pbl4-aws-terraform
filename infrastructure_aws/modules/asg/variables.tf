@@ -6,19 +6,42 @@ variable "project_name" {
 variable "web_ami_id" {
   description = "AMI ID for web"
   type        = string
-  default     = "ami-0ba8071c5fdcaac01"
+  default     = "ami-00d8fc944fb171e29"
 }
 
 variable "app_ami_id" {
   description = "AMI ID for app"
   type        = string
-  default     = "ami-04d8bc39f6e7c0979"
+  default     = "ami-00d8fc944fb171e29"
 }
 
 variable "instance_type" {
   description = "EC2 instance type"
   type        = string
   default     = "t3.micro"
+}
+
+variable "web_ecr_image" {
+  description = "Full ECR image URI for web tier"
+  type        = string
+  default = "120915930136.dkr.ecr.ap-southeast-1.amazonaws.com/pbl4-quickshow-frontend"
+}
+
+variable "app_ecr_image" {
+  description = "Full ECR image URI for app tier"
+  type        = string
+  default = "120915930136.dkr.ecr.ap-southeast-1.amazonaws.com/pbl4-quickshow-backend"
+}
+
+variable "image_tag" {
+  description = "Tag for the Docker images"
+  type        = string
+  default     = "latest"
+}
+
+variable "region" {
+  description = "AWS region"
+  type        = string
 }
 
 variable "key_pair_name" {
@@ -79,10 +102,10 @@ variable "internal_alb_dns_name" {
   type        = string
 }
 
-variable "db_host" {
-  description = "Database host"
-  type        = string
-}
+# variable "db_host" {
+#   description = "Database host"
+#   type        = string
+# }
 
 variable "db_username" {
   description = "Database username"
@@ -92,4 +115,10 @@ variable "db_username" {
 variable "db_password" {
   description = "Database password"
   type        = string
+}
+
+variable "ec2_instance_profile_name" {
+  description = "The name of the IAM instance profile for EC2"
+  type        = string
+  default     = ""
 }

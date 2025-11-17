@@ -28,3 +28,8 @@ variable "private_web_subnet_ids" {
   description = "List of private web subnet IDs for internal ALB"
   type        = list(string)
 }
+
+# variable "sns_topic_arn" {
+#   description = "ARN of the SNS topic for alarms"
+#   type        = string
+# }
