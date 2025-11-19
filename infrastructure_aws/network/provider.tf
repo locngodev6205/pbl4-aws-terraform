@@ -9,7 +9,7 @@ terraform {
     organization = "locngodev" 
     
     workspaces { 
-      name = "pbl4-three-tier-infrastructure" 
+      name = "pbl4-network" 
     } 
   } 
 }

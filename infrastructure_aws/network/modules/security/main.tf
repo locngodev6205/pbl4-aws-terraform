@@ -1,8 +1,8 @@
 # Security Groups Module
 
-resource "aws_security_group" "alb" {
-  name        = "${var.project_name}-alb-sg"
-  description = "Security group for ALB"
+resource "aws_security_group" "external_web_alb" {
+  name        = "${var.project_name}-external_web-alb-sg"
+  description = "Security group for external_web ALB"
   vpc_id      = var.vpc_id
 
   ingress {
@@ -33,6 +33,27 @@ resource "aws_security_group" "alb" {
   }
 }
 
+resource "aws_security_group" "bastion" {
+  name        = "${var.project_name}-bastion-sg"
+  description = "Security group for bastion host"
+  vpc_id      = var.vpc_id
+
+  ingress {
+    description = "SSH from anywhere"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
 resource "aws_security_group" "web" {
   name        = "${var.project_name}-web-sg"
   description = "Security group for web EC2 instances"
@@ -43,7 +64,7 @@ resource "aws_security_group" "web" {
     from_port       = 80
     to_port         = 80
     protocol        = "tcp"
-    security_groups = [aws_security_group.alb.id]
+    security_groups = [aws_security_group.external_web_alb.id]
   }
 
   ingress {
@@ -51,7 +72,15 @@ resource "aws_security_group" "web" {
     from_port       = 443
     to_port         = 443
     protocol        = "tcp"
-    security_groups = [aws_security_group.alb.id]
+    security_groups = [aws_security_group.external_web_alb.id]
+  }
+
+  ingress {
+    description = "SSH from anywhere"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    security_groups = [aws_security_group.bastion.id]
   }
 
   egress {
@@ -66,9 +95,9 @@ resource "aws_security_group" "web" {
   }
 }
 
-resource "aws_security_group" "internal_alb" {
-  name        = "${var.project_name}-internal-alb-sg"
-  description = "Security group for internal ALB"
+resource "aws_security_group" "external_app_alb" {
+  name        = "${var.project_name}-external_app-alb-sg"
+  description = "Security group for external_app ALB"
   vpc_id      = var.vpc_id
 
   ingress {
@@ -110,7 +139,7 @@ resource "aws_security_group" "app" {
     from_port       = 80
     to_port         = 80
     protocol        = "tcp"
-    security_groups = [aws_security_group.internal_alb.id]
+    security_groups = [aws_security_group.external_app_alb.id]
   }
 
   # ingress {
@@ -118,8 +147,16 @@ resource "aws_security_group" "app" {
   #   from_port       = 443
   #   to_port         = 443
   #   protocol        = "tcp"
-  #   security_groups = [aws_security_group.internal_alb.id]
+  #   security_groups = [aws_security_group.external_app_alb.id]
   # }
+
+  ingress {
+    description     = "SSH from anywhere"
+    from_port       = 22
+    to_port         = 22
+    protocol        = "tcp"
+    security_groups = [aws_security_group.bastion.id]
+  }
 
   egress {
     from_port   = 0
@@ -133,27 +170,27 @@ resource "aws_security_group" "app" {
   }
 }
 
-resource "aws_security_group" "db" {
-  name        = "${var.project_name}-db-sg"
-  description = "Security group for DB instances"
-  vpc_id      = var.vpc_id
+# resource "aws_security_group" "db" {
+#   name        = "${var.project_name}-db-sg"
+#   description = "Security group for DB instances"
+#   vpc_id      = var.vpc_id
 
-  ingress {
-    description     = "MySQL from App"
-    from_port       = 3306
-    to_port         = 3306
-    protocol        = "tcp"
-    security_groups = [aws_security_group.app.id]
-  }
+#   ingress {
+#     description     = "MySQL from App"
+#     from_port       = 3306
+#     to_port         = 3306
+#     protocol        = "tcp"
+#     security_groups = [aws_security_group.app.id]
+#   }
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+#   egress {
+#     from_port   = 0
+#     to_port     = 0
+#     protocol    = "-1"
+#     cidr_blocks = ["0.0.0.0/0"]
+#   }
 
-  tags = {
-    Name = "${var.project_name}-db-sg"
-  }
-}
+#   tags = {
+#     Name = "${var.project_name}-db-sg"
+#   }
+# }

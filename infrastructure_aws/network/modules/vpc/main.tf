@@ -99,13 +99,6 @@ resource "aws_route_table" "private" {
   }
 }
 
-# Associate Private Subnets with Private Route Table
-# resource "aws_route_table_association" "private" {
-#   count          = length(var.private_subnet)
-#   subnet_id      = aws_subnet.private[count.index].id
-#   route_table_id = aws_route_table.private.id
-# }
-
 # Chỉ web và app cần igw
 resource "aws_route_table_association" "private_web_app" {
   count          = 4
@@ -113,16 +106,16 @@ resource "aws_route_table_association" "private_web_app" {
   route_table_id = aws_route_table.private.id
 }
 
-resource "aws_route_table" "db_private" {
-  vpc_id = aws_vpc.main.id
+# resource "aws_route_table" "db_private" {
+#   vpc_id = aws_vpc.main.id
 
-  tags = {
-    Name = "${var.project_name}-db-private-rt"
-  }
-}
+#   tags = {
+#     Name = "${var.project_name}-db-private-rt"
+#   }
+# }
 
-resource "aws_route_table_association" "db_private" {
-  count          = 2
-  subnet_id      = aws_subnet.private[count.index + 4].id
-  route_table_id = aws_route_table.db_private.id
-}
+# resource "aws_route_table_association" "db_private" {
+#   count          = 2
+#   subnet_id      = aws_subnet.private[count.index + 4].id
+#   route_table_id = aws_route_table.db_private.id
+# }

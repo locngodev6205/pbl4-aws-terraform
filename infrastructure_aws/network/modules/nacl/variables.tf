@@ -24,10 +24,10 @@ variable "private_app_subnet_ids" {
   type        = list(string)
 }
 
-variable "private_db_subnet_ids" {
-  description = "List of DB subnet IDs"
-  type        = list(string)
-}
+# variable "private_db_subnet_ids" {
+#   description = "List of DB subnet IDs"
+#   type        = list(string)
+# }
 
 variable "public_subnet_cidrs" {
   description = "List of public subnet CIDR blocks"
@@ -45,7 +45,7 @@ variable "app_private_subnet_cidrs" {
 }
 
 
-variable "db_private_subnet_cidrs" {
-  description = "List of private subnet CIDR blocks"
-  type        = list(string)
-}
+# variable "db_private_subnet_cidrs" {
+#   description = "List of private subnet CIDR blocks"
+#   type        = list(string)
+# }

@@ -2,7 +2,7 @@
 
 # Role for EC2 to assume
 resource "aws_iam_role" "ec2_ecr_role" {
-  name = "${var.project_name}-ec2-ecr-role"
+  name = "${local.current_workspace}-ec2-ecr-role"
 
   # Trust policy allowing EC2 service to assume this role
   assume_role_policy = jsonencode({
@@ -27,7 +27,7 @@ resource "aws_iam_role_policy_attachment" "ec2_ecr_policy_attachment" {
 
 # Create an Instance Profile to attach the role to EC2 instances
 resource "aws_iam_instance_profile" "ec2_ecr_instance_profile" {
-  name = "${var.project_name}-ec2-ecr-profile"
+  name = "${local.current_workspace}-ec2-ecr-profile"
   role = aws_iam_role.ec2_ecr_role.name
 }
 
