@@ -1,0 +1,41 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Deploy Network') {
+            steps {
+                script {
+                    dir("infrastructure_aws/network") {
+
+                        sh 'terraform init'
+                        sh 'terraform apply -auto-approve'
+                    }
+                }
+            }
+        }
+
+        stage('Deploy Server') {
+            steps {
+                script {
+                    dir("infrastructure_aws/server") {
+                        sh 'terraform workspace select ${WORKSPACE_ENV_SERVER}'
+                        sh 'terraform init'
+                        sh 'terraform apply -auto-approve --var-file "terraform.tfvars" -var="image_tag=${IMAGE_TAG}"'
+                    }
+                }
+            }
+        }
+
+        stage('Deploy Client') {
+            steps {
+                script {
+                    dir("infrastructure_aws/client") {
+                        sh 'terraform workspace select ${WORKSPACE_ENV_CLIENT}'
+                        sh 'terraform init'
+                        sh 'terraform apply -auto-approve --var-file "terraform.tfvars" -var="image_tag=${IMAGE_TAG}"'
+                    }
+                }
+            }
+        }
+    }
+}
