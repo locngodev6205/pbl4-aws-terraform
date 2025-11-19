@@ -1,49 +1,48 @@
 pipeline {
     agent any
 
+    environment {
+        TF_TOKEN_app_terraform_io = credentials('tfc-token')
+    }
+
     stages {
         stage('Deploy Network') {
-            withCredentials([string(credentialsId: 'tfc-token', variable: 'TF_TOKEN_app_terraform_io')]) {
-                steps {
-                    script {
-                        dir("infrastructure_aws/network") {
+            steps {
+                script {
+                    dir("infrastructure_aws/network") {
 
-                            sh 'terraform init'
-                            sh 'terraform apply -auto-approve'
-                        }
+                        sh 'rm -rf .terraform .terraform.lock.hcl'
+                        sh 'terraform init'
+                        sh 'terraform apply -auto-approve'
                     }
                 }
             }
         }
 
         stage('Deploy Server') {
-            withCredentials([string(credentialsId: 'tfc-token', variable: 'TF_TOKEN_app_terraform_io')]) {
-                steps {
-                    script {
-                        dir("infrastructure_aws/server") {
-                            sh 'terraform workspace select ${WORKSPACE_ENV_SERVER}'
-                            sh 'terraform init'
-                            sh 'terraform apply -auto-approve --var-file "terraform.tfvars" -var="image_tag=${IMAGE_TAG}"'
-                        }
+            steps {
+                script {
+                    dir("infrastructure_aws/server") {
+
+                        sh 'rm -rf .terraform .terraform.lock.hcl'
+                        sh 'terraform init'
+                        sh 'terraform apply -auto-approve --var-file "terraform.tfvars" -var="image_tag=${IMAGE_TAG}"'
                     }
                 }
             }
-            
         }
 
         stage('Deploy Client') {
-            withCredentials([string(credentialsId: 'tfc-token', variable: 'TF_TOKEN_app_terraform_io')]) {
-                steps {
-                    script {
-                        dir("infrastructure_aws/client") {
-                            sh 'terraform workspace select ${WORKSPACE_ENV_CLIENT}'
-                            sh 'terraform init'
-                            sh 'terraform apply -auto-approve --var-file "terraform.tfvars" -var="image_tag=${IMAGE_TAG}"'
-                        }
+            steps {
+                script {
+                    dir("infrastructure_aws/client") {
+
+                        sh 'rm -rf .terraform .terraform.lock.hcl'
+                        sh 'terraform init'
+                        sh 'terraform apply -auto-approve --var-file "terraform.tfvars" -var="image_tag=${IMAGE_TAG}"'
                     }
                 }
             }
-            
         }
     }
 }
