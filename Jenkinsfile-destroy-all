@@ -1,0 +1,74 @@
+pipeline {
+    agent any
+
+    stages {
+
+        stage('Destroy Client') {
+            when {
+                expression {
+                    def target = env.TARGET
+                    return target == 'client' || target == 'all'
+                }
+            }
+            steps {
+                withCredentials([string(credentialsId: 'tfc-token', variable: 'TF_TOKEN_app_terraform_io')]) {
+                    script {
+                        dir("infrastructure_aws/client") {
+                            withEnv(["TF_WORKSPACE=pbl4-client-${WORKSPACE_ENV}"]) {
+                                sh 'terraform init -input=false'
+                                sh """
+                                    terraform destroy -auto-approve \
+                                      -var="image_tag=${IMAGE_TAG}"
+                                """
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Destroy Server') {
+            when {
+                expression {
+                    def target = env.TARGET
+                    return target == 'server' || target == 'all'
+                }
+            }
+            steps {
+                withCredentials([string(credentialsId: 'tfc-token', variable: 'TF_TOKEN_app_terraform_io')]) {
+                    script {
+                        dir("infrastructure_aws/server") {
+                            withEnv(["TF_WORKSPACE=pbl4-server-${WORKSPACE_ENV}"]) {
+                                sh 'terraform init -input=false'
+                                sh """
+                                    terraform destroy -auto-approve \
+                                      -var="image_tag=${IMAGE_TAG}"
+                                """
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Destroy Network') {
+            when {
+                expression {
+                    def target = env.TARGET
+                    return target == 'network' || target == 'all'
+                }
+            }
+            steps {
+                withCredentials([string(credentialsId: 'tfc-token', variable: 'TF_TOKEN_app_terraform_io')]) {
+                    script {
+                        dir("infrastructure_aws/network") {
+                            sh 'terraform init -input=false'
+                            sh 'terraform destroy -auto-approve'
+                        }
+                    }
+                }
+            }
+        }
+
+    }
+}
