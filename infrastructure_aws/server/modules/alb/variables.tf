@@ -24,6 +24,11 @@ variable "public_subnet_ids" {
   type        = list(string)
 }
 
+variable "port" {
+  description = "Port for the ALB listener"
+  type        = number
+}
+
 # variable "private_web_subnet_ids" {
 #   description = "List of private web subnet IDs for internal ALB"
 #   type        = list(string)

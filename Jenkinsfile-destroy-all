@@ -16,10 +16,7 @@ pipeline {
                         dir("infrastructure_aws/client") {
                             withEnv(["TF_WORKSPACE=pbl4-client-${WORKSPACE_ENV}"]) {
                                 sh 'terraform init -input=false'
-                                sh """
-                                    terraform destroy -auto-approve \
-                                      -var="image_tag=${IMAGE_TAG}"
-                                """
+                                sh 'terraform destroy -auto-approve'
                             }
                         }
                     }
@@ -40,10 +37,7 @@ pipeline {
                         dir("infrastructure_aws/server") {
                             withEnv(["TF_WORKSPACE=pbl4-server-${WORKSPACE_ENV}"]) {
                                 sh 'terraform init -input=false'
-                                sh """
-                                    terraform destroy -auto-approve \
-                                      -var="image_tag=${IMAGE_TAG}"
-                                """
+                                sh 'terraform destroy -auto-approve'
                             }
                         }
                     }

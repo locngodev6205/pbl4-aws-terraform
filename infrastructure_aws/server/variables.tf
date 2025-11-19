@@ -42,3 +42,9 @@ variable "image_tag" {
   type        = string
   default = "v1.0.10"
 }
+
+variable "port" {
+  description = "Port for the ALB listener"
+  type        = number
+  default     = 80
+}

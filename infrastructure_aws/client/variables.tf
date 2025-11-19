@@ -61,4 +61,10 @@ variable "image_tag" {
   default = "v1.0.10"
 }
 
+variable "port" {
+  description = "Port for the ALB listener"
+  type        = number
+  default     = 80
+}
+
 # terraform plan --var-file "terraform.tfvars"

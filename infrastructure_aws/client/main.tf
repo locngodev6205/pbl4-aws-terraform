@@ -9,6 +9,7 @@ module "alb" {
   # external_app_alb_sg_id   = module.security.external_app_alb_sg_id
   public_subnet_ids    = local.public_subnet_ids
   private_web_subnet_ids = local.private_web_subnet_ids
+  port                 = var.port
   # sns_topic_arn        = aws_sns_topic.alarms_topic.arn
 }
 

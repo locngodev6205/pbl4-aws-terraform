@@ -40,7 +40,7 @@ resource "aws_lb_target_group" "web" {
 
 resource "aws_lb_listener" "external_web_http" {
   load_balancer_arn = aws_lb.external_web.arn
-  port              = "80"
+  port              = var.port
   protocol          = "HTTP"
 
   default_action {

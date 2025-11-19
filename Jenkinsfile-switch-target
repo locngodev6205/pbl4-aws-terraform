@@ -1,0 +1,6 @@
+aws elbv2 modify-listener --listener-arn $LISTENER_BLUE_ARN \
+  --default-actions Type=forward,TargetGroupArn=$TG_GREEN_ARN
+
+# GREEN trỏ sang TG_BLUE
+aws elbv2 modify-listener --listener-arn $LISTENER_GREEN_ARN \
+  --default-actions Type=forward,TargetGroupArn=$TG_BLUE_ARN

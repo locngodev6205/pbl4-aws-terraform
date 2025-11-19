@@ -18,7 +18,7 @@ resource "aws_lb" "external_app" {
 # Target Group for App Tier
 resource "aws_lb_target_group" "app" {
   name     = "${var.project_name}-app-tg" 
-  port     = 80
+  port     = var.port
   protocol = "HTTP"
   vpc_id   = var.vpc_id
 
