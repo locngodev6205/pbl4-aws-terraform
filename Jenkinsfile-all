@@ -24,7 +24,10 @@ pipeline {
                             // pbl4-server-blue / pbl4-server-green
                             withEnv(["TF_WORKSPACE=pbl4-server-${WORKSPACE_ENV}"]) {
                                 sh 'terraform init -input=false'
-                                sh 'terraform apply -auto-approve --var-file "terraform.tfvars" -var="image_tag=${IMAGE_TAG}"'
+                                sh """
+                                    terraform apply -auto-approve \
+                                      -var="image_tag=${IMAGE_TAG}"
+                                """
                             }
                         }
                     }
@@ -40,7 +43,10 @@ pipeline {
                             // pbl4-client-blue / pbl4-client-green
                             withEnv(["TF_WORKSPACE=pbl4-client-${WORKSPACE_ENV}"]) {
                                 sh 'terraform init -input=false'
-                                sh 'terraform apply -auto-approve --var-file "terraform.tfvars" -var="image_tag=${IMAGE_TAG}"'
+                                sh """
+                                    terraform apply -auto-approve \
+                                      -var="image_tag=${IMAGE_TAG}"
+                                """
                             }
                         }
                     }
