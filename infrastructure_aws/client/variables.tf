@@ -38,7 +38,7 @@ locals {
   ec2_ecr_instance_profile_name = data.terraform_remote_state.network.outputs.ec2_ecr_instance_profile_name
 
   alb_app_dns_name = try (
-    data.terraform_remote_state.server.outputs.alb_app_dns_name, "http://localhost:3000"
+    data.terraform_remote_state.server.outputs.alb_app_dns_name, "localhost:3000"
   )
 
 }
