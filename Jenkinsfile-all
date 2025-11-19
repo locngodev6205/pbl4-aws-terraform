@@ -2,12 +2,12 @@ pipeline {
     agent any
 
     stages {
+
         stage('Deploy Network') {
-            withCredentials([string(credentialsId: 'tfc-token', variable: 'TF_TOKEN_app_terraform_io')]) {
-                steps {
+            steps {
+                withCredentials([string(credentialsId: 'tfc-token', variable: 'TF_TOKEN_app_terraform_io')]) {
                     script {
                         dir("infrastructure_aws/network") {
-
                             sh 'terraform init'
                             sh 'terraform apply -auto-approve'
                         }
@@ -17,11 +17,11 @@ pipeline {
         }
 
         stage('Deploy Server') {
-            withCredentials([string(credentialsId: 'tfc-token', variable: 'TF_TOKEN_app_terraform_io')]) {
-                steps {
+            steps {
+                withCredentials([string(credentialsId: 'tfc-token', variable: 'TF_TOKEN_app_terraform_io')]) {
                     script {
                         dir("infrastructure_aws/server") {
-                            sh 'terraform workspace select ${WORKSPACE_ENV_SERVER}'
+                            sh 'terraform workspace select pbl4-server-${WORKSPACE_ENV}'
                             sh 'terraform init'
                             sh 'terraform apply -auto-approve --var-file "terraform.tfvars" -var="image_tag=${IMAGE_TAG}"'
                         }
@@ -31,11 +31,11 @@ pipeline {
         }
 
         stage('Deploy Client') {
-            withCredentials([string(credentialsId: 'tfc-token', variable: 'TF_TOKEN_app_terraform_io')]) {
-                steps {
+            steps {
+                withCredentials([string(credentialsId: 'tfc-token', variable: 'TF_TOKEN_app_terraform_io')]) {
                     script {
                         dir("infrastructure_aws/client") {
-                            sh 'terraform workspace select ${WORKSPACE_ENV_CLIENT}'
+                            sh 'terraform workspace select pbl4-client-${WORKSPACE_ENV}'
                             sh 'terraform init'
                             sh 'terraform apply -auto-approve --var-file "terraform.tfvars" -var="image_tag=${IMAGE_TAG}"'
                         }
@@ -43,5 +43,6 @@ pipeline {
                 }
             }
         }
+
     }
 }
