@@ -38,8 +38,7 @@ pipeline {
                                 sh 'terraform init -input=false'
                                 sh """
                                     terraform apply -auto-approve \
-                                      -var="image_tag=${IMAGE_TAG}" \
-                                      -var="port=${LISTEN_PORT}"
+                                      -var="image_tag=${IMAGE_TAG}"
                                 """
                             }
                         }
@@ -64,8 +63,7 @@ pipeline {
                                 sh 'terraform init -input=false'
                                 sh """
                                     terraform apply -auto-approve \
-                                      -var="image_tag=${IMAGE_TAG}" \
-                                      -var="port=${LISTEN_PORT}"
+                                      -var="image_tag=${IMAGE_TAG}"
                                 """
                             }
                         }

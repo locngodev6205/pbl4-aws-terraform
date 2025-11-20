@@ -42,24 +42,6 @@ output "web_sg_id" {
 output "app_sg_id" {
   value = module.security.app_sg_id
 }
-
-output "alb_web_arn" {
-  value = module.alb.alb_web_arn
-}
-
-output "alb_web_dns_name" {
-  value = module.alb.alb_web_dns_name
-}
-
-output "alb_app_arn" {
-  value = module.alb.alb_app_arn
-}
-
-output "alb_app_dns_name" {
-  value = module.alb.alb_app_dns_name
-}
-
-
 # ------- IAM Outputs -------
 output "ec2_ecr_instance_profile_name" {
   value = aws_iam_instance_profile.ec2_ecr_instance_profile.name

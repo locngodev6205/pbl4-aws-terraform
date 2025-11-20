@@ -48,18 +48,6 @@ module "nacl" {
   depends_on = [module.cloudtrail]
 }
 
-module "alb" {
-  source = "./modules/alb"
-
-  project_name         = local.current_workspace
-  external_web_alb_sg_id            = module.security.external_web_alb_sg_id
-  external_app_alb_sg_id   = module.security.external_app_alb_sg_id
-  public_subnet_ids    = module.vpc.public_subnet_ids
-
-  depends_on = [module.cloudtrail]
-}
-
-
 # Tạo một ec2 bastion để SSH vào các instance trong private subnet (Web & App)
 resource "aws_instance" "bastion" {
   ami                         = var.bastion_ami_id

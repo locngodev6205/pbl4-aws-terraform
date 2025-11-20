@@ -1,12 +1,14 @@
 # ALB Module
-module "listener" {
-  source = "./modules/listener"
+module "alb" {
+  source = "./modules/alb"
 
   project_name         = local.current_workspace
   vpc_id               = local.vpc_id
-
-  external_app_arn     = local.external_app_arn
-  port                 = var.port
+  # external_web_alb_sg_id            = module.security.external_web_alb_sg_id
+  external_app_alb_sg_id   = local.external_app_alb_sg_id
+  public_subnet_ids    = local.public_subnet_ids
+  # private_web_subnet_ids = local.private_web_subnet_ids
+  # sns_topic_arn        = aws_sns_topic.alarms_topic.arn
 }
 
 # ASG Module
@@ -19,8 +21,8 @@ module "asg" {
   app_sg_id                 = local.app_sg_id
   # private_web_subnet_ids    = module.vpc.private_web_subnet_ids
   private_app_subnet_ids    = local.private_app_subnet_ids
-  # web_target_group_arn      = module.listener.web_target_group_arn
-  app_target_group_arn      = module.listener.app_target_group_arn
+  # web_target_group_arn      = module.alb.web_target_group_arn
+  app_target_group_arn      = module.alb.app_target_group_arn
 
   image_tag                 = var.image_tag
 

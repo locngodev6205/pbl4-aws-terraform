@@ -21,11 +21,15 @@ locals {
 
   external_app_alb_sg_id       = data.terraform_remote_state.network.outputs.external_app_alb_sg_id
   app_sg_id                    = data.terraform_remote_state.network.outputs.app_sg_id
-  external_app_arn             = data.terraform_remote_state.network.outputs.alb_app_arn
-  alb_app_dns_name             = data.terraform_remote_state.network.outputs.alb_app_dns_name
 
   ec2_ecr_instance_profile_name = data.terraform_remote_state.network.outputs.ec2_ecr_instance_profile_name
 }
+
+# variable "project_name" {
+#   description = "Project name prefix"
+#   type        = string
+#   default     = "pbl4"
+# }
 
 variable "aws_region" {
   description = "AWS region"
@@ -37,10 +41,4 @@ variable "image_tag" {
   description = "Docker image tag to deploy"
   type        = string
   default = "v1.0.10"
-}
-
-variable "port" {
-  description = "Port for the ALB listener"
-  type        = number
-  default     = 80
 }

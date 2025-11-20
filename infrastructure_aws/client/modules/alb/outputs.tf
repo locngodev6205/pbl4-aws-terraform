@@ -6,11 +6,10 @@ output "alb_web_dns_name" {
   value = aws_lb.external_web.dns_name
 }
 
-output "alb_app_arn" {
-  value = aws_lb.external_app.arn
+output "web_target_group_arn" {
+  value = aws_lb_target_group.web.arn
 }
 
-output "alb_app_dns_name" {
-  value = aws_lb.external_app.dns_name
+output "alb_zone_id" {
+  value = aws_lb.external_web.zone_id
 }
-
