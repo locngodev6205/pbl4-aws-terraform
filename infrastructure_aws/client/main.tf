@@ -1,5 +1,5 @@
 # ALB Module
-module "alb" {
+module "listener" {
   source = "./modules/listener"
 
   project_name         = local.current_workspace
@@ -19,8 +19,8 @@ module "asg" {
   # app_sg_id                 = local.app_sg_id
   private_web_subnet_ids    = local.private_web_subnet_ids
   # private_app_subnet_ids    = module.vpc.private_app_subnet_ids
-  web_target_group_arn      = module.alb.web_target_group_arn
-  # app_target_group_arn      = module.alb.app_target_group_arn
+  web_target_group_arn      = module.listener.web_target_group_arn
+  # app_target_group_arn      = module.listener.app_target_group_arn
 
   alb_app_dns_name          = local.alb_app_dns_name
   image_tag                 = var.image_tag

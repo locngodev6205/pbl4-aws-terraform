@@ -97,26 +97,6 @@ variable "app_target_group_arn" {
   type        = string
 }
 
-variable "alb_app_dns_name" {
-  description = "DNS name of the internal ALB"
-  type        = string
-}
-
-# variable "db_host" {
-#   description = "Database host"
-#   type        = string
-# }
-
-# variable "db_username" {
-#   description = "Database username"
-#   type        = string
-# }
-
-# variable "db_password" {
-#   description = "Database password"
-#   type        = string
-# }
-
 variable "ec2_instance_profile_name" {
   description = "The name of the IAM instance profile for EC2"
   type        = string

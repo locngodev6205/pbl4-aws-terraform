@@ -26,12 +26,6 @@ locals {
   ec2_ecr_instance_profile_name = data.terraform_remote_state.network.outputs.ec2_ecr_instance_profile_name
 }
 
-# variable "project_name" {
-#   description = "Project name prefix"
-#   type        = string
-#   default     = "pbl4"
-# }
-
 variable "aws_region" {
   description = "AWS region"
   type        = string
