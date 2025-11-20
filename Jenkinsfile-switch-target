@@ -1,6 +1,36 @@
-aws elbv2 modify-listener --listener-arn $LISTENER_BLUE_ARN \
-  --default-actions Type=forward,TargetGroupArn=$TG_GREEN_ARN
+pipeline {
+    agent any
 
-# GREEN trỏ sang TG_BLUE
-aws elbv2 modify-listener --listener-arn $LISTENER_GREEN_ARN \
-  --default-actions Type=forward,TargetGroupArn=$TG_BLUE_ARN
+    parameters {
+        string(name: 'ALB_ARN',     defaultValue: '',              description: 'ALB ARN')
+        string(name: 'AWS_REGION',  defaultValue: 'ap-southeast-1', description: 'AWS region')
+    }
+
+    // AWS CLI dùng để biết đang thao tác ở region nào
+    environment {
+        AWS_DEFAULT_REGION = "${params.AWS_REGION}"
+    }
+
+    stages {
+        stage('Switch Blue/Green') {
+            steps {
+                sh '''
+                    set -euo pipefail
+
+                    ALB_ARN="${ALB_ARN}"
+
+                    listeners_json=$(aws elbv2 describe-listeners --load-balancer-arn "$ALB_ARN")
+
+                    LISTENER_BLUE_ARN=$(echo "$listeners_json"  | jq -r '.Listeners[0].ListenerArn')
+                    LISTENER_GREEN_ARN=$(echo "$listeners_json" | jq -r '.Listeners[1].ListenerArn')
+
+                    TG_BLUE_ARN=$(echo "$listeners_json"  | jq -r '.Listeners[0].DefaultActions[0].TargetGroupArn')
+                    TG_GREEN_ARN=$(echo "$listeners_json" | jq -r '.Listeners[1].DefaultActions[0].TargetGroupArn')
+
+                    aws elbv2 modify-listener --listener-arn "$LISTENER_BLUE_ARN"  --default-actions Type=forward,TargetGroupArn="$TG_GREEN_ARN"
+                    aws elbv2 modify-listener --listener-arn "$LISTENER_GREEN_ARN" --default-actions Type=forward,TargetGroupArn="$TG_BLUE_ARN"
+                '''
+            }
+        }
+    }
+}

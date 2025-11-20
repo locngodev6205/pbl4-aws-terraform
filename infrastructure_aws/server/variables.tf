@@ -21,6 +21,7 @@ locals {
 
   external_app_alb_sg_id       = data.terraform_remote_state.network.outputs.external_app_alb_sg_id
   app_sg_id                    = data.terraform_remote_state.network.outputs.app_sg_id
+  external_app_arn             = data.terraform_remote_state.network.outputs.alb_app_arn
 
   ec2_ecr_instance_profile_name = data.terraform_remote_state.network.outputs.ec2_ecr_instance_profile_name
 }

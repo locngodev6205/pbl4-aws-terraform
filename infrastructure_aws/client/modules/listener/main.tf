@@ -1,21 +1,3 @@
-# ALB Module Configuration
-
-resource "aws_lb" "external_web" {
-  name               = "${var.project_name}-web-alb"
-  internal           = false
-  load_balancer_type = "application"
-  security_groups    = [var.external_web_alb_sg_id]
-  subnets            = var.public_subnet_ids  
-
-  enable_deletion_protection = false # cho phép xóa ALB khi cần thiết
-
-  drop_invalid_header_fields = true # từ chối các yêu cầu với header không hợp lệ
-
-  tags = {
-    Name = "${var.project_name}-web-alb"
-  }
-}
-
 resource "aws_lb_target_group" "web" {
   name     = "${var.project_name}-web-tg"
   port     = 80
@@ -39,7 +21,7 @@ resource "aws_lb_target_group" "web" {
 }
 
 resource "aws_lb_listener" "external_web_http" {
-  load_balancer_arn = aws_lb.external_web.arn
+  load_balancer_arn = var.external_web_arn
   port              = var.port
   protocol          = "HTTP"
 

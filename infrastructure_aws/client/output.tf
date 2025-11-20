@@ -1,4 +1,4 @@
-# ------- ALB Outputs -------
+# ------- listener Outputs -------
 # output "alb_web_arn" {
 #   value = module.alb.alb_web_arn
 # }

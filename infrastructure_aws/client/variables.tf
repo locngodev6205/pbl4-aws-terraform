@@ -33,13 +33,18 @@ locals {
   private_web_subnet_ids       = data.terraform_remote_state.network.outputs.private_web_subnet_ids
 
   external_web_alb_sg_id       = data.terraform_remote_state.network.outputs.external_web_alb_sg_id
-  web_sg_id                    = data.terraform_remote_state.network.outputs.web_sg_id
+  web_sg_id                    = data.terraform_remote_state.network.outputs.external_web_alb_sg_id
+
+  alb_web_arn                  = data.terraform_remote_state.network.outputs.alb_web_arn
+  alb_web_dns_name             = data.terraform_remote_state.network.outputs.alb_web_dns_name
+  alb_app_dns_name             = data.terraform_remote_state.network.outputs.alb_app_dns_name
+  
 
   ec2_ecr_instance_profile_name = data.terraform_remote_state.network.outputs.ec2_ecr_instance_profile_name
 
-  alb_app_dns_name = try (
-    data.terraform_remote_state.server.outputs.alb_app_dns_name, "localhost:3000"
-  )
+  # alb_app_dns_name = try (
+  #   data.terraform_remote_state.server.outputs.alb_app_dns_name, "localhost:3000"
+  # )
 
 }
 
