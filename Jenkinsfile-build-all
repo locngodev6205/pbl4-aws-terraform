@@ -47,6 +47,31 @@ pipeline {
             }
         }
 
+        stage('Deploy Client') {
+            when {
+                expression {
+                    def target = env.TARGET
+                    return target == 'client' || target == 'all'
+                }
+            }
+            steps {
+                withCredentials([string(credentialsId: 'tfc-token', variable: 'TF_TOKEN_app_terraform_io')]) {
+                    script {
+                        dir("infrastructure_aws/client") {
+                            // pbl4-client-blue / pbl4-client-green
+                            withEnv(["TF_WORKSPACE=pbl4-client-${WORKSPACE_ENV}"]) {
+                                sh 'terraform init -input=false'
+                                sh """
+                                    terraform apply -auto-approve \
+                                      -var="image_tag=${IMAGE_TAG}"
+                                """
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         stage('Deploy dns-routing') {
             when {
                 expression {
