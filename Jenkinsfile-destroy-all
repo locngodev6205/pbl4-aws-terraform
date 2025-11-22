@@ -2,6 +2,28 @@ pipeline {
     agent any
 
     stages {
+        stage('Destroy dns-routing') {
+            when {
+                expression {
+                    def target = env.TARGET
+                    return target == 'dns-routing' || target == 'all'
+                }
+            }
+            steps {
+                withCredentials([string(credentialsId: 'tfc-token', variable: 'TF_TOKEN_app_terraform_io')]) {
+                    script {
+                        dir("infrastructure_aws/route53") {
+                            // Sử dụng workspace cố định cho route53
+                            withEnv(["TF_WORKSPACE=pbl4-route53"]) {
+                                sh 'terraform init -input=false'
+                                sh 'terraform destroy -auto-approve'
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
 
         stage('Destroy Client') {
             when {

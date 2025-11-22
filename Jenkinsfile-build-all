@@ -47,30 +47,28 @@ pipeline {
             }
         }
 
-        stage('Deploy Client') {
+        stage('Deploy dns-routing') {
             when {
                 expression {
                     def target = env.TARGET
-                    return target == 'client' || target == 'all'
+                    return target == 'dns-routing' || target == 'all'
                 }
             }
             steps {
                 withCredentials([string(credentialsId: 'tfc-token', variable: 'TF_TOKEN_app_terraform_io')]) {
                     script {
-                        dir("infrastructure_aws/client") {
-                            // pbl4-client-blue / pbl4-client-green
-                            withEnv(["TF_WORKSPACE=pbl4-client-${WORKSPACE_ENV}"]) {
+                        dir("infrastructure_aws/dns-routing") {
+                            // workspace riêng cho Route53, ví dụ: pbl4-route53
+                            withEnv(["TF_WORKSPACE=pbl4-dns-routing"]) {
                                 sh 'terraform init -input=false'
-                                sh """
-                                    terraform apply -auto-approve \
-                                      -var="image_tag=${IMAGE_TAG}"
-                                """
+                                sh 'terraform apply -auto-approve'
                             }
                         }
                     }
                 }
             }
         }
+
 
     }
 }
