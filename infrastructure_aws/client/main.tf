@@ -24,7 +24,7 @@ module "asg" {
   web_target_group_arn      = module.alb.web_target_group_arn
   # app_target_group_arn      = module.alb.app_target_group_arn
 
-  alb_app_dns_name          = local.alb_app_dns_name
+  app_dns_name          = var.app_dns_name
   image_tag                 = var.image_tag
 
   ec2_instance_profile_name = local.ec2_ecr_instance_profile_name

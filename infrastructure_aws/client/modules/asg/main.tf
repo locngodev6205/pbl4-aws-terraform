@@ -52,7 +52,7 @@ resource "aws_launch_template" "web" {
               docker stop quickshow-frontend || true
               docker rm quickshow-frontend || true
 
-              docker run -d --name quickshow-frontend -e APP_ALB_DNS=${var.alb_app_dns_name} -p 80:80 ${var.web_ecr_image}:${var.image_tag}
+              docker run -d --name quickshow-frontend -e APP_ALB_DNS=${var.app_dns_name} -p 80:80 ${var.web_ecr_image}:${var.image_tag}
               EOF
       )
 

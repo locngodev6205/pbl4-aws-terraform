@@ -11,8 +11,20 @@ resource "aws_route53_record" "web" {
   type    = "A"
 
   alias {
-    name                   = local.active_alb_dns_name
-    zone_id                = local.active_alb_zone_id
+    name                   = local.active_alb_web_dns_name
+    zone_id                = local.active_alb_web_zone_id
+    evaluate_target_health = true
+  }
+}
+
+resource "aws_route53_record" "app" {
+  zone_id = data.aws_route53_zone.main.zone_id
+  name    = "app"
+  type    = "A"
+
+  alias {
+    name                   = local.active_alb_app_dns_name
+    zone_id                = local.active_alb_app_zone_id
     evaluate_target_health = true
   }
 }

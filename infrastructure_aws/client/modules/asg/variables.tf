@@ -91,7 +91,7 @@ variable "web_target_group_arn" {
 #   type        = string
 # }
 
-variable "alb_app_dns_name" {
+variable "app_dns_name" {
   description = "DNS name of the internal ALB"
   type        = string
   default = "http://localhost:3000"
