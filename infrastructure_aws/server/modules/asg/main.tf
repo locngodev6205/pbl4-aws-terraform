@@ -43,10 +43,10 @@ resource "aws_launch_template" "app" {
 
               cat >/home/ubuntu/app.env <<EOT
                 CLERK_PUBLISHABLE_KEY=pk_test_bmVhdC1tdXN0YW5nLTYwLmNsZXJrLmFjY291bnRzLmRldiQ
-                SECRET_NAME=server/api
                 TMDB_API_KEY=eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJiNTJmZTg0NjMzOWQ1NTNjNTQ0MTk2YzNjM2U5ZDcwNSIsIm5iZiI6MTc1MjkxNDMxMC43NjMsInN1YiI6IjY4N2I1OTg2YjQ1YjNmYTQ4NTE2OThmZCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.YM8D4tffvGdheWsN3kYeyLnKfka8hPCpXDjgU2WHuCE
                 STRIPE_PUBLISHABLE_KEY=pk_test_51Rn9rCQ92B7ZVzTAHozVN66ZRbcARVvHNSSUjsWjTZAMLhTA3FLvEvPo9AIQjdMQuh0m1hQx9WSduF1A7phnIf0000bgDELO2N
                 SENDER_EMAIL=62205ngovanloc@gmail.com
+                SECRET_NAME=server/api
               EOT
 
 
