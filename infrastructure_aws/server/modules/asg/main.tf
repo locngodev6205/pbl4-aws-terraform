@@ -42,23 +42,11 @@ resource "aws_launch_template" "app" {
               docker rm quickshow-backend || true
 
               cat >/home/ubuntu/app.env <<EOT
-                MONGODB_URI=mongodb+srv://locngodev:locngodev@cluster0.lzbpi06.mongodb.net
                 CLERK_PUBLISHABLE_KEY=pk_test_bmVhdC1tdXN0YW5nLTYwLmNsZXJrLmFjY291bnRzLmRldiQ
-                CLERK_SECRET_KEY=sk_test_BKqSVDbURojWdFwTlSsNz1rT90RirNpBcyBQvTLmUN
-
-                INNGEST_EVENT_KEY=bqO8l8FOA6dLMaEgo5HSoi3YL2ihQjGovKGvbEaeGDmtbeetOiLKITRylvgSu8bV_MaYHg1AiSBU_o_9yiDSbw
-                INNGEST_SIGNING_KEY=signkey-prod-2c0a5ef59be2613cfcf894b381faaf405301c1965ff712fd07a090b4d752ed10
-
+                SECRET_NAME=server/api
                 TMDB_API_KEY=eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJiNTJmZTg0NjMzOWQ1NTNjNTQ0MTk2YzNjM2U5ZDcwNSIsIm5iZiI6MTc1MjkxNDMxMC43NjMsInN1YiI6IjY4N2I1OTg2YjQ1YjNmYTQ4NTE2OThmZCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.YM8D4tffvGdheWsN3kYeyLnKfka8hPCpXDjgU2WHuCE
-
                 STRIPE_PUBLISHABLE_KEY=pk_test_51Rn9rCQ92B7ZVzTAHozVN66ZRbcARVvHNSSUjsWjTZAMLhTA3FLvEvPo9AIQjdMQuh0m1hQx9WSduF1A7phnIf0000bgDELO2N
-                STRIPE_SECRET_KEY=sk_test_51Rn9rCQ92B7ZVzTArCJRHpgTEpq7Y7YfOxzgLuIcJ0djYFC2qq5X98SaZpojhI31KIK6yVhwtad536VMrWPxHEGM003EoH8gLF
-                STRIPE_WEBHOOK_SECRET=whsec_Zx7PoOGUlt7NHbSdV09RLfVDxah2rHXd
-
                 SENDER_EMAIL=62205ngovanloc@gmail.com
-                SMTP_USER=92aa4c001@smtp-brevo.com
-                SMTP_PASS=xsmtpsib-f0cd80336e5a170be3c28b75e297a8bc8c68ee5c7a1d65fe6af649c3f996ee02-AZv3LSqFyS3j3cyz
-
               EOT
 
 
