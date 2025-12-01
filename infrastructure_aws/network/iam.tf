@@ -25,29 +25,10 @@ resource "aws_iam_role_policy_attachment" "ec2_ecr_policy_attachment" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
 
-
-
-# Policy to allow reading from Secrets Manager
-resource "aws_iam_policy" "secrets_manager_read_policy" {
-  name        = "${local.current_workspace}-secrets-manager-read-policy"
-  description = "Allows reading secrets from AWS Secrets Manager"
-
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Action = "secretsmanager:GetSecretValue",
-        Effect   = "Allow",
-        Resource = "*"
-      }
-    ]
-  })
-}
-
-# Attach the Secrets Manager read policy to the role
+# Attach AWS managed SecretsManagerReadWrite policy to the role
 resource "aws_iam_role_policy_attachment" "ec2_secrets_manager_policy_attachment" {
   role       = aws_iam_role.ec2_ecr_role.name
-  policy_arn = aws_iam_policy.secrets_manager_read_policy.arn
+  policy_arn = "arn:aws:iam::aws:policy/SecretsManagerReadWrite"
 }
 
 # Create an Instance Profile to attach the role to EC2 instances

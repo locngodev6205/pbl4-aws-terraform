@@ -50,7 +50,7 @@ resource "aws_launch_template" "app" {
               EOT
 
 
-              docker run -d --name quickshow-backend --env-file /home/ubuntu/app.env -p 80:3000 ${var.app_ecr_image}:${var.image_tag}
+              docker run -d --name quickshow-backend --env-file /home/ubuntu/app.env -p 80:80 ${var.app_ecr_image}:${var.image_tag}
               EOF
       )
 
