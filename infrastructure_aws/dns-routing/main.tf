@@ -6,6 +6,8 @@ data "aws_route53_zone" "main" {
 
 
 resource "aws_route53_record" "web" {
+  count = length(local.active_alb_web_dns_name) > 0 ? 1 : 0
+
   zone_id = data.aws_route53_zone.main.zone_id
   name    = "web"
   type    = "A"
@@ -18,6 +20,7 @@ resource "aws_route53_record" "web" {
 }
 
 resource "aws_route53_record" "app" {
+  count = length(local.active_alb_app_dns_name) > 0 ? 1 : 0
   zone_id = data.aws_route53_zone.main.zone_id
   name    = "app"
   type    = "A"
