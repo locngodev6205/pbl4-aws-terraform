@@ -3,9 +3,14 @@ pipeline {
 
     parameters {
         choice(
-            name: 'ACTIVE_COLOR',
+            name: 'ACTIVE_COLOR_WEB',
             choices: ['blue', 'green'],
-            description: 'Chọn màu đang ACTIVE cho client (ALB sẽ trỏ về màu này)'
+            description: 'Chọn màu đang ACTIVE cho web (ALB sẽ trỏ về màu này)'
+        )
+        choice(
+            name: 'ACTIVE_COLOR_APP',
+            choices: ['blue', 'green'],
+            description: 'Chọn màu đang ACTIVE cho app (ALB sẽ trỏ về màu này)'
         )
     }
 
@@ -17,10 +22,10 @@ pipeline {
                         sh '''#!/usr/bin/env bash
                             set -e
 
-                            echo "Switching active_color to: ${ACTIVE_COLOR}"
+                            echo "Switching active_color_web to: ${ACTIVE_COLOR_WEB} and active_color_app to: ${ACTIVE_COLOR_APP}"
 
                             terraform init -input=false
-                            terraform apply -auto-approve -var="active_color=${ACTIVE_COLOR}"
+                            terraform apply -auto-approve -var="active_color_web=${ACTIVE_COLOR_WEB}" -var="active_color_app=${ACTIVE_COLOR_APP}"
                         '''
                     }
                 }

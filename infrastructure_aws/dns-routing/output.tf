@@ -1,7 +1,7 @@
-output "active_color" {
-  description = "Màu hiện đang active (blue/green)"
-  value       = var.active_color
-}
+# output "active_color" {
+#   description = "Màu hiện đang active (blue/green)"
+#   value       = var.active_color
+# }
 
 output "active_alb_web_dns_name" {
   description = "DNS của ALB đang được route bởi Route53"
