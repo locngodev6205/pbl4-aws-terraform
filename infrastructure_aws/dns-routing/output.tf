@@ -14,9 +14,11 @@ output "active_alb_web_zone_id" {
 }
 
 output "domain_endpoint_web" {
-  description = "Domain endpoint để truy cập frontend"
-  value       = aws_route53_record.web.fqdn
+  description = "The DNS name of the web record"
+  # Dùng one(...) và [*] để xử lý list
+  value       = one(aws_route53_record.web[*].fqdn)
 }
+
 
 output "active_alb_app_dns_name" {
   description = "DNS của ALB App đang được route bởi Route53"
@@ -29,6 +31,7 @@ output "active_alb_app_zone_id" {
 }
 
 output "domain_endpoint_app" {
-  description = "Domain endpoint để truy cập backend"
-  value       = aws_route53_record.app.fqdn
+  description = "The DNS name of the app record"
+  # Tương tự cho app
+  value       = one(aws_route53_record.app[*].fqdn)
 }
